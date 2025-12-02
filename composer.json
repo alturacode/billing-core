@@ -1,0 +1,34 @@
+{
+  "name": "alturacode/billing-core",
+  "description": "Billing package for PHP SaaS apps.",
+  "keywords": [
+    "billing",
+    "saas",
+    "saas-billing",
+    "saas-payments",
+    "saas-subscription",
+    "saas-billing-core"
+  ],
+  "version": "0.1.0",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "AlturaCode\\Billing\\Core\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Gerardo J. Baez",
+      "email": "gerardo@alturacode.com"
+    }
+  ],
+  "suggest": {
+    "alturacode/billing-stripe": "Stripe Billing Adapter for Altura Code Billing Package."
+  },
+  "minimum-stability": "dev",
+  "require": {
+    "php": ">=8.2",
+    "symfony/uid": "8.1.x-dev"
+  }
+}
