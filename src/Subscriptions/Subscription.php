@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AlturaCode\Billing\Core\Subscriptions;
 
 use AlturaCode\Billing\Core\Money;
-use AlturaCode\Billing\Core\ProductId;
 use AlturaCode\Billing\Core\ProductPriceId;
 use AlturaCode\Billing\Core\SubscriptionCustomerId;
 use AlturaCode\Billing\Core\SubscriptionId;
@@ -26,8 +25,6 @@ final readonly class Subscription
      * @param DateTimeImmutable $createdAt
      * @param bool $cancelAtPeriodEnd
      * @param DateTimeImmutable|null $trialEndsAt
-     * @param DateTimeImmutable|null $currentPeriodStartsAt
-     * @param DateTimeImmutable|null $currentPeriodEndsAt
      * @param DateTimeImmutable|null $canceledAt
      */
     public function __construct(
@@ -41,16 +38,13 @@ final readonly class Subscription
         private DateTimeImmutable      $createdAt,
         private bool                   $cancelAtPeriodEnd = false,
         private ?DateTimeImmutable     $trialEndsAt = null,
-        private ?DateTimeImmutable     $currentPeriodStartsAt = null,
-        private ?DateTimeImmutable     $currentPeriodEndsAt = null,
         private ?DateTimeImmutable     $canceledAt = null,
     )
     {
         $this->assertAtLeastOneItem();
         $this->assertPrimaryItemRequired();
-        $this->assertValidCancelAtPeriod();
-        $this->assertValidPeriod();
         $this->assertAllItemsHaveSameCurrency();
+        $this->assertAllItemsHavePeriodDatesWhenActive();
     }
 
     /**
@@ -138,16 +132,6 @@ final readonly class Subscription
         return $this->trialEndsAt;
     }
 
-    public function currentPeriodStartsAt(): ?DateTimeImmutable
-    {
-        return $this->currentPeriodStartsAt;
-    }
-
-    public function currentPeriodEndsAt(): ?DateTimeImmutable
-    {
-        return $this->currentPeriodEndsAt;
-    }
-
     public function canceledAt(): ?DateTimeImmutable
     {
         return $this->canceledAt;
@@ -175,24 +159,20 @@ final readonly class Subscription
 
     public function changePrimaryItem(SubscriptionItemId $newPrimaryId): Subscription
     {
-        foreach ($this->items as $item) {
-            if ($item->id()->equals($newPrimaryId)) {
-                return new self(
-                    $this->id,
-                    $this->customerId,
-                    $this->provider,
-                    $this->name,
-                    $this->status,
-                    $this->items,
-                    $newPrimaryId,
-                    $this->createdAt,
-                    $this->cancelAtPeriodEnd,
-                    $this->trialEndsAt,
-                    $this->currentPeriodStartsAt,
-                    $this->currentPeriodEndsAt,
-                    $this->canceledAt
-                );
-            }
+        if (array_any($this->items, fn($item) => $item->id()->equals($newPrimaryId))) {
+            return new self(
+                $this->id,
+                $this->customerId,
+                $this->provider,
+                $this->name,
+                $this->status,
+                $this->items,
+                $newPrimaryId,
+                $this->createdAt,
+                $this->cancelAtPeriodEnd,
+                $this->trialEndsAt,
+                $this->canceledAt
+            );
         }
 
         throw new DomainException('Cannot set primary item to an item that is not part of the subscription.');
@@ -200,24 +180,20 @@ final readonly class Subscription
 
     public function changeItemQuantity(SubscriptionItemId $itemId, int $quantity): Subscription
     {
-        foreach ($this->items as $item) {
-            if ($item->id()->equals($itemId)) {
-                return new self(
-                    $this->id,
-                    $this->customerId,
-                    $this->provider,
-                    $this->name,
-                    $this->status,
-                    array_map(fn(SubscriptionItem $item) => $item->id()->equals($item->id()) ? $item->withQuantity($quantity) : $item, $this->items),
-                    $this->primaryItemId,
-                    $this->createdAt,
-                    $this->cancelAtPeriodEnd,
-                    $this->trialEndsAt,
-                    $this->currentPeriodStartsAt,
-                    $this->currentPeriodEndsAt,
-                    $this->canceledAt
-                );
-            }
+        if (array_any($this->items, fn($item) => $item->id()->equals($itemId))) {
+            return new self(
+                $this->id,
+                $this->customerId,
+                $this->provider,
+                $this->name,
+                $this->status,
+                array_map(fn(SubscriptionItem $item) => $item->id()->equals($item->id()) ? $item->withQuantity($quantity) : $item, $this->items),
+                $this->primaryItemId,
+                $this->createdAt,
+                $this->cancelAtPeriodEnd,
+                $this->trialEndsAt,
+                $this->canceledAt
+            );
         }
 
         throw new DomainException('Cannot change quantity of item that is not part of the subscription.');
@@ -233,10 +209,37 @@ final readonly class Subscription
         return $this->status === SubscriptionStatus::Active;
     }
 
-    public function activate(
-        DateTimeImmutable $currentPeriodStartsAt,
-        DateTimeImmutable $currentPeriodEndsAt,
+    public function hasItem(SubscriptionItemId $itemId): bool
+    {
+        return array_any($this->items, fn(SubscriptionItem $item) => $item->id()->equals($itemId));
+    }
+
+    public function setItemPeriod(
+        SubscriptionItemId $itemId,
+        DateTimeImmutable  $currentPeriodStartsAt,
+        DateTimeImmutable  $currentPeriodEndsAt
     ): Subscription
+    {
+        if (array_any($this->items, fn($item) => $item->id()->equals($itemId))) {
+            return new self(
+                $this->id,
+                $this->customerId,
+                $this->provider,
+                $this->name,
+                $this->status,
+                array_map(fn(SubscriptionItem $item) => $item->id()->equals($itemId) ? $item->withPeriodDates($currentPeriodStartsAt, $currentPeriodEndsAt) : $item, $this->items),
+                $this->primaryItemId,
+                $this->createdAt,
+                $this->cancelAtPeriodEnd,
+                $this->trialEndsAt,
+                $this->canceledAt
+            );
+        }
+
+        throw new DomainException('Cannot set period dates of item that is not part of the subscription.');
+    }
+
+    public function activate(): Subscription
     {
         return new self(
             id: $this->id,
@@ -249,8 +252,6 @@ final readonly class Subscription
             createdAt: $this->createdAt,
             cancelAtPeriodEnd: $this->cancelAtPeriodEnd,
             trialEndsAt: $this->trialEndsAt,
-            currentPeriodStartsAt: $currentPeriodStartsAt,
-            currentPeriodEndsAt: $currentPeriodEndsAt,
         );
     }
 
@@ -276,33 +277,25 @@ final readonly class Subscription
         }
     }
 
-    private function assertValidCancelAtPeriod(): void
-    {
-        if ($this->cancelAtPeriodEnd && $this->currentPeriodEndsAt === null) {
-            throw new DomainException('Cannot cancel at period end without a current period end date.');
-        }
-    }
-
-    private function assertValidPeriod(): void
-    {
-        if ($this->currentPeriodStartsAt !== null && $this->currentPeriodEndsAt === null) {
-            throw new DomainException('Current period end date must be set when start date is present.');
-        }
-
-        if ($this->currentPeriodStartsAt === null && $this->currentPeriodEndsAt !== null) {
-            throw new DomainException('Current period start date must be set when end date is present.');
-        }
-
-        if ($this->currentPeriodStartsAt !== null && $this->currentPeriodEndsAt !== null && $this->currentPeriodStartsAt >= $this->currentPeriodEndsAt) {
-            throw new DomainException('Current period end date must be after start date.');
-        }
-    }
 
     private function assertAllItemsHaveSameCurrency(): void
     {
         $currencies = array_map(fn(SubscriptionItem $item) => $item->price()->currency()->code(), $this->items);
         if (count(array_unique($currencies)) !== 1) {
             throw new DomainException('All items must have the same currency.');
+        }
+    }
+
+    private function assertAllItemsHavePeriodDatesWhenActive(): void
+    {
+        if ($this->status !== SubscriptionStatus::Active) {
+            return;
+        }
+
+        foreach ($this->items as $item) {
+            if ($item->currentPeriodStartsAt() === null && $item->currentPeriodEndsAt() !== null) {
+                throw new DomainException('All items must have a current period start date when subscription is active.');
+            }
         }
     }
 }
