@@ -46,7 +46,7 @@ $billing = new BillingManager($products, $subscriptions, $providerRegistry);
 $result = $billing->createSubscription(
     name: 'default',
     customerId: 'cust_123',
-    productId: '01HZX3J8Y8B7MDQW9RGS0F7C39', // price ULID as string
+    priceId: '01HZX3J8Y8B7MDQW9RGS0F7C39', // price ULID as string
     provider: 'stripe',
 );
 
@@ -243,7 +243,7 @@ use AlturaCode\Billing\Core\Provider\BillingProviderRegistry;
 use AlturaCode\Billing\Stripe\StripeBillingProvider; // from alturacode/billing-stripe
 
 $providerRegistry = new BillingProviderRegistry([
-    'stripe' => new StripeBillingProvider(/* API keys, config, etc. */),
+    'stripe' => new StripeBillingProvider(/* Stripe Client */),
 ]);
 ```
 
@@ -268,14 +268,13 @@ $manager = new BillingManager($products, $subscriptions, $providerRegistry);
 $result = $manager->createSubscription(
     name: 'default',
     customerId: 'cust_123',          // your internal customer identifier
-    productId: '01HZX3J8Y8B7MDQW9RGS0F7C39', // the primary price ULID as a string
+    priceId: '01HZX3J8Y8B7MDQW9RGS0F7C39', // the primary price ULID as a string
     provider: 'stripe',              // must exist in BillingProviderRegistry
     quantity: 1,
     trialEndsAt: null,
     addons: [
         // Each addon refers to other product & price IDs
         [
-            'productId' => '01HZX3J8Y8B7MDQW9RGS0F7C40',
             'priceId'   => '01HZX3J8Y8B7MDQW9RGS0F7C41',
             'quantity'  => 5,
         ],
@@ -356,7 +355,7 @@ The exact semantics depend on the provider package, but `BillingProviderResult` 
 
 `ExternalIdMapper` is a small helper for mapping between your internal IDs and provider-specific external IDs (for example, Stripe customer IDs, subscription IDs, etc.).
 
-Usage differs per provider; consult the provider package documentation (`billing-stripe`, etc.) for details on how they store and retrieve external identifiers.
+You should create an implementation of `ExternalIdMapper` which handles the saving and retrieval of external IDs.
 
 ---
 

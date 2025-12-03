@@ -27,18 +27,18 @@ final readonly class BillingManager
     /**
      * @param string $name
      * @param string $customerId
-     * @param string $productId
+     * @param string $priceId
      * @param string $provider
      * @param int $quantity
      * @param DateTimeImmutable|null $trialEndsAt
-     * @param array<array{productId: string, priceId: string, quantity: int}> $addons
+     * @param array<array{priceId: string, quantity: int}> $addons
      * @param array $providerOptions
      * @return BillingProviderResult
      */
     public function createSubscription(
         string             $name,
         string             $customerId,
-        string             $productId,
+        string             $priceId,
         string             $provider,
         int                $quantity = 1,
         ?DateTimeImmutable $trialEndsAt = null,
@@ -55,27 +55,47 @@ final readonly class BillingManager
             throw new RuntimeException('Subscription already exists.');
         }
 
-        $product = $this->products->findByPriceId(new ProductPriceId(new Ulid($productId)));
-        if ($product === null) {
-            throw new RuntimeException('Product not found');
+        $products = $this->products->findMultipleByPriceIds([
+            new ProductPriceId(new Ulid($priceId)),
+            ...array_map(fn($addon) => new ProductPriceId(new Ulid($addon['priceId'])), $addons),
+        ]);
+
+        $primaryProduct = array_find($products, fn(Product $product) => $product->id()->equals(
+            new ProductId(new Ulid($priceId))
+        ));
+
+        if ($primaryProduct === null) {
+            throw new RuntimeException(sprintf('Product with price ID %s not found', $priceId));
         }
 
-        if ($product->kind() !== ProductKind::Plan) {
+        if ($primaryProduct->kind() !== ProductKind::Plan) {
             throw new RuntimeException('Primary product must be a plan.');
         }
 
-        $price = $product->findPrice(new ProductPriceId(new Ulid($productId)));
+        $primaryPrice = $primaryProduct->findPrice(new ProductPriceId(new Ulid($priceId)));
+
+        // Ensure all addons are defined in some product
+        foreach ($addons as $addon) {
+            $product = array_find($products, fn(Product $product) => $product->hasPrice(new ProductPriceId(new Ulid($addon['priceId']))));
+            if ($product === null) {
+                throw new RuntimeException(sprintf('Product with price ID %s not found', $addon['priceId']));
+            }
+
+            // Ensure addon price currency is the same as primary price currency
+            if ($product->findPrice(new ProductPriceId(new Ulid($addon['priceId'])))->price()->currency()->equals($primaryPrice->price()->currency()) === false) {
+                throw new RuntimeException(sprintf('Addon price currency must match primary price currency. Addon price ID: %s', $addon['priceId']));
+            }
+        }
 
         $subscription = Subscription::create(
             name: new SubscriptionName($name),
             customerId: new SubscriptionCustomerId($customerId),
-            productId: $product->id(),
-            productPriceId: $price->id(),
+            productPriceId: $primaryPrice->id(),
+            price: $primaryPrice->price(),
             provider: new SubscriptionProvider($provider),
             quantity: $quantity,
             trialEndsAt: $trialEndsAt,
             items: array_map(fn($addon) => [
-                'productId' => new ProductId($addon['productId']),
                 'priceId' => new ProductPriceId($addon['priceId']),
                 'quantity' => $addon['quantity'],
             ], $addons)

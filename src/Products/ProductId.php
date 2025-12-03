@@ -23,7 +23,7 @@ final readonly class ProductId implements Stringable
         return $this->value->toString();
     }
 
-    public function equals(ProductPriceId $other): bool
+    public function equals(ProductId $other): bool
     {
         return $this->value->equals($other->value());
     }

@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Subscriptions;
 
+use AlturaCode\Billing\Core\Money;
 use AlturaCode\Billing\Core\ProductId;
 use AlturaCode\Billing\Core\ProductPriceId;
 use AlturaCode\Billing\Core\SubscriptionCustomerId;
 use AlturaCode\Billing\Core\SubscriptionId;
 use AlturaCode\Billing\Core\SubscriptionItemId;
 use DateTimeImmutable;
-use LogicException;
+use DomainException;
 
 final readonly class Subscription
 {
@@ -22,6 +23,7 @@ final readonly class Subscription
      * @param SubscriptionStatus $status
      * @param array<SubscriptionItem> $items
      * @param SubscriptionItemId $primaryItemId
+     * @param DateTimeImmutable $createdAt
      * @param bool $cancelAtPeriodEnd
      * @param DateTimeImmutable|null $trialEndsAt
      * @param DateTimeImmutable|null $currentPeriodStartsAt
@@ -48,24 +50,25 @@ final readonly class Subscription
         $this->assertPrimaryItemRequired();
         $this->assertValidCancelAtPeriod();
         $this->assertValidPeriod();
+        $this->assertAllItemsHaveSameCurrency();
     }
 
     /**
      * @param SubscriptionName $name
      * @param SubscriptionCustomerId $customerId
-     * @param ProductId $productId
      * @param ProductPriceId $productPriceId
+     * @param Money $price
      * @param SubscriptionProvider $provider
      * @param int $quantity
      * @param DateTimeImmutable|null $trialEndsAt
-     * @param array<array{productId: ProductId, priceId: ProductPriceId, quantity: int}> $items
+     * @param array<array{priceId: ProductPriceId, quantity: int, price: Money}> $items
      * @return Subscription
      */
     public static function create(
         SubscriptionName       $name,
         SubscriptionCustomerId $customerId,
-        ProductId              $productId,
         ProductPriceId         $productPriceId,
+        Money                  $price,
         SubscriptionProvider   $provider,
         int                    $quantity = 1,
         ?DateTimeImmutable     $trialEndsAt = null,
@@ -80,14 +83,14 @@ final readonly class Subscription
             status: SubscriptionStatus::Incomplete,
             items: [new SubscriptionItem(
                 id: $primaryItemId = SubscriptionItemId::generate(),
-                productId: $productId,
                 priceId: $productPriceId,
                 quantity: $quantity,
+                price: $price,
             ), ...array_map(fn($item) => new SubscriptionItem(
                 id: SubscriptionItemId::generate(),
-                productId: $item['productId'],
                 priceId: $item['priceId'],
                 quantity: $item['quantity'],
+                price: $item['price'],
             ), $items)],
             primaryItemId: $primaryItemId,
             createdAt: new DateTimeImmutable(),
@@ -158,7 +161,7 @@ final readonly class Subscription
             }
         }
 
-        throw new LogicException('Primary item not found.');
+        throw new DomainException('Primary item not found.');
     }
 
     /** @return SubscriptionItem[] */
@@ -192,7 +195,7 @@ final readonly class Subscription
             }
         }
 
-        throw new LogicException('Cannot set primary item to an item that is not part of the subscription.');
+        throw new DomainException('Cannot set primary item to an item that is not part of the subscription.');
     }
 
     public function changeItemQuantity(SubscriptionItemId $itemId, int $quantity): Subscription
@@ -217,7 +220,7 @@ final readonly class Subscription
             }
         }
 
-        throw new LogicException('Cannot change quantity of item that is not part of the subscription.');
+        throw new DomainException('Cannot change quantity of item that is not part of the subscription.');
     }
 
     public function hasTrial(): bool
@@ -254,7 +257,7 @@ final readonly class Subscription
     private function assertAtLeastOneItem(): void
     {
         if (empty($this->items)) {
-            throw new LogicException('Subscription must have at least one item.');
+            throw new DomainException('Subscription must have at least one item.');
         }
     }
 
@@ -269,29 +272,37 @@ final readonly class Subscription
         }
 
         if (!$primaryFound) {
-            throw new LogicException('Primary item must be one of the subscription items.');
+            throw new DomainException('Primary item must be one of the subscription items.');
         }
     }
 
     private function assertValidCancelAtPeriod(): void
     {
         if ($this->cancelAtPeriodEnd && $this->currentPeriodEndsAt === null) {
-            throw new LogicException('Cannot cancel at period end without a current period end date.');
+            throw new DomainException('Cannot cancel at period end without a current period end date.');
         }
     }
 
     private function assertValidPeriod(): void
     {
         if ($this->currentPeriodStartsAt !== null && $this->currentPeriodEndsAt === null) {
-            throw new LogicException('Current period end date must be set when start date is present.');
+            throw new DomainException('Current period end date must be set when start date is present.');
         }
 
         if ($this->currentPeriodStartsAt === null && $this->currentPeriodEndsAt !== null) {
-            throw new LogicException('Current period start date must be set when end date is present.');
+            throw new DomainException('Current period start date must be set when end date is present.');
         }
 
         if ($this->currentPeriodStartsAt !== null && $this->currentPeriodEndsAt !== null && $this->currentPeriodStartsAt >= $this->currentPeriodEndsAt) {
-            throw new LogicException('Current period end date must be after start date.');
+            throw new DomainException('Current period end date must be after start date.');
+        }
+    }
+
+    private function assertAllItemsHaveSameCurrency(): void
+    {
+        $currencies = array_map(fn(SubscriptionItem $item) => $item->price()->currency()->code(), $this->items);
+        if (count(array_unique($currencies)) !== 1) {
+            throw new DomainException('All items must have the same currency.');
         }
     }
 }

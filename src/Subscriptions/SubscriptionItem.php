@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Subscriptions;
 
-use AlturaCode\Billing\Core\ProductId;
+use AlturaCode\Billing\Core\Money;
 use AlturaCode\Billing\Core\ProductPriceId;
 use AlturaCode\Billing\Core\SubscriptionItemId;
 use InvalidArgumentException;
@@ -13,9 +13,9 @@ final readonly class SubscriptionItem
 {
     public function __construct(
         private SubscriptionItemId $id,
-        private ProductId          $productId,
         private ProductPriceId     $priceId,
         private int                $quantity,
+        private Money              $price
     )
     {
         if ($quantity < 1) {
@@ -28,11 +28,6 @@ final readonly class SubscriptionItem
         return $this->id;
     }
 
-    public function productId(): ProductId
-    {
-        return $this->productId;
-    }
-
     public function priceId(): ProductPriceId
     {
         return $this->priceId;
@@ -43,8 +38,13 @@ final readonly class SubscriptionItem
         return $this->quantity;
     }
 
+    public function price(): Money
+    {
+        return $this->price;
+    }
+
     public function withQuantity(int $quantity): self
     {
-        return new self($this->id, $this->productId, $this->priceId, $quantity);
+        return new self($this->id, $this->priceId, $quantity, $this->price);
     }
 }

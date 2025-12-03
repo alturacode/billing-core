@@ -76,6 +76,11 @@ final readonly class Product
         return $this->prices;
     }
 
+    public function hasPrice(ProductPriceId $productPriceId): bool
+    {
+        return array_find($this->prices, fn($price) => $price->id()->equals($productPriceId)) !== false;
+    }
+
     public function findPrice(ProductPriceId $productPriceId): ProductPrice
     {
         foreach ($this->prices as $price) {
