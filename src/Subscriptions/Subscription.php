@@ -248,7 +248,21 @@ final readonly class Subscription
 
         return $this->copy(
             status: SubscriptionStatus::Paused,
-            canceledAt: null,
+        );
+    }
+
+    public function resume(): Subscription
+    {
+        if ($this->status === SubscriptionStatus::Active) {
+            throw new DomainException('Cannot resume an active subscription.');
+        }
+
+        if ($this->status === SubscriptionStatus::Canceled) {
+            throw new DomainException('Cannot resume a canceled subscription.');
+        }
+
+        return $this->copy(
+            status: SubscriptionStatus::Active,
         );
     }
 
