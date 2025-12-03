@@ -255,6 +255,23 @@ final readonly class Subscription
         );
     }
 
+    public function cancel(bool $atPeriodEnd = true): Subscription
+    {
+        return new self(
+            id: $this->id,
+            customerId: $this->customerId,
+            provider: $this->provider,
+            name: $this->name,
+            status: $atPeriodEnd ? $this->status : SubscriptionStatus::Canceled,
+            items: $this->items,
+            primaryItemId: $this->primaryItemId,
+            createdAt: $this->createdAt,
+            cancelAtPeriodEnd: $atPeriodEnd,
+            trialEndsAt: $this->trialEndsAt,
+            canceledAt: new DateTimeImmutable(),
+        );
+    }
+
     private function assertAtLeastOneItem(): void
     {
         if (empty($this->items)) {
