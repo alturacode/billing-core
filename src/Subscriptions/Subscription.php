@@ -45,6 +45,7 @@ final readonly class Subscription
         $this->assertPrimaryItemRequired();
         $this->assertAllItemsHaveSameCurrency();
         $this->assertAllItemsHavePeriodDatesWhenActive();
+        $this->assertCanceledMatchesStatus();
     }
 
     /**
@@ -187,7 +188,12 @@ final readonly class Subscription
                 $this->provider,
                 $this->name,
                 $this->status,
-                array_map(fn(SubscriptionItem $item) => $item->id()->equals($item->id()) ? $item->withQuantity($quantity) : $item, $this->items),
+                array_map(
+                    fn(SubscriptionItem $item) => $item->id()->equals($itemId)
+                        ? $item->withQuantity($quantity)
+                        : $item,
+                    $this->items
+                ),
                 $this->primaryItemId,
                 $this->createdAt,
                 $this->cancelAtPeriodEnd,
@@ -199,9 +205,9 @@ final readonly class Subscription
         throw new DomainException('Cannot change quantity of item that is not part of the subscription.');
     }
 
-    public function hasTrial(): bool
+    public function isInTrial(DateTimeImmutable $now): bool
     {
-        return $this->trialEndsAt !== null;
+        return $this->trialEndsAt !== null && $this->trialEndsAt > $now;
     }
 
     public function isActive(): bool
@@ -241,6 +247,14 @@ final readonly class Subscription
 
     public function activate(): Subscription
     {
+        if ($this->status === SubscriptionStatus::Active) {
+            return $this;
+        }
+
+        if ($this->status === SubscriptionStatus::Canceled) {
+            throw new DomainException('Cannot activate a canceled subscription.');
+        }
+
         return new self(
             id: $this->id,
             customerId: $this->customerId,
@@ -257,6 +271,10 @@ final readonly class Subscription
 
     public function cancel(bool $atPeriodEnd = true): Subscription
     {
+        if ($this->status === SubscriptionStatus::Canceled) {
+            return $this;
+        }
+
         return new self(
             id: $this->id,
             customerId: $this->customerId,
@@ -268,7 +286,28 @@ final readonly class Subscription
             createdAt: $this->createdAt,
             cancelAtPeriodEnd: $atPeriodEnd,
             trialEndsAt: $this->trialEndsAt,
-            canceledAt: new DateTimeImmutable(),
+            canceledAt: $atPeriodEnd ? null : new DateTimeImmutable(),
+        );
+    }
+
+    public function pause(): Subscription
+    {
+        if ($this->status === SubscriptionStatus::Canceled) {
+            throw new DomainException('Cannot pause a canceled subscription.');
+        }
+
+        return new self(
+            id: $this->id,
+            customerId: $this->customerId,
+            provider: $this->provider,
+            name: $this->name,
+            status: SubscriptionStatus::Paused,
+            items: $this->items,
+            primaryItemId: $this->primaryItemId,
+            createdAt: $this->createdAt,
+            cancelAtPeriodEnd: $this->cancelAtPeriodEnd,
+            trialEndsAt: $this->trialEndsAt,
+            canceledAt: null,
         );
     }
 
@@ -310,9 +349,16 @@ final readonly class Subscription
         }
 
         foreach ($this->items as $item) {
-            if ($item->currentPeriodStartsAt() === null && $item->currentPeriodEndsAt() !== null) {
+            if ($item->currentPeriodStartsAt() === null || $item->currentPeriodEndsAt() === null) {
                 throw new DomainException('All items must have a current period start date when subscription is active.');
             }
+        }
+    }
+
+    private function assertCanceledMatchesStatus(): void
+    {
+        if ($this->canceledAt !== null && $this->status !== SubscriptionStatus::Canceled) {
+            throw new DomainException('CanceledAt can only be set when subscription is canceled.');
         }
     }
 }
