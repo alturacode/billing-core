@@ -10,9 +10,7 @@ final readonly class BillingProviderResult
 {
     private function __construct(
         public Subscription                      $subscription,
-        public BillingProviderResultStatus       $status,
         public BillingProviderResultClientAction $clientAction,
-        public ?string                           $reason
     )
     {
     }
@@ -21,19 +19,7 @@ final readonly class BillingProviderResult
     {
         return new self(
             $subscription,
-            BillingProviderResultStatus::Success,
             BillingProviderResultClientAction::none(),
-            null
-        );
-    }
-
-    public static function failed(Subscription $subscription, string $reason): self
-    {
-        return new self(
-            $subscription,
-            BillingProviderResultStatus::Failure,
-            BillingProviderResultClientAction::none(),
-            $reason
         );
     }
 
@@ -41,14 +27,12 @@ final readonly class BillingProviderResult
     {
         return new self(
             $subscription,
-            BillingProviderResultStatus::RequiresAction,
             BillingProviderResultClientAction::redirect($url),
-            null
         );
     }
 
     public function requiresAction(): bool
     {
-        return $this->status === BillingProviderResultStatus::RequiresAction;
+        return $this->clientAction->clientActionType !== BillingProviderResultClientActionType::None;
     }
 }
