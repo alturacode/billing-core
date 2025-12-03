@@ -33,6 +33,6 @@ final readonly class BillingProviderResult
 
     public function requiresAction(): bool
     {
-        return $this->clientAction->clientActionType !== BillingProviderResultClientActionType::None;
+        return $this->clientAction->type->isNone() === false;
     }
 }

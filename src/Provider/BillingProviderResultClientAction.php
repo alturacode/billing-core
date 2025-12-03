@@ -7,7 +7,7 @@ namespace AlturaCode\Billing\Core\Provider;
 final readonly class BillingProviderResultClientAction
 {
     private function __construct(
-        public BillingProviderResultClientActionType $clientActionType,
+        public BillingProviderResultClientActionType $type,
         public ?string                               $url
     )
     {

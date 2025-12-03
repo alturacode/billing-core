@@ -155,7 +155,7 @@ Located under `AlturaCode\Billing\Core\Provider`:
 - `BillingProvider` — interface that concrete providers implement
 - `BillingProviderRegistry` — registry mapping provider names (for example, `stripe`) to `BillingProvider` instances
 - `SubscriptionDraft` / `SubscriptionDraftItem` — value objects passed to providers at creation time
-- `BillingProviderResult`, `BillingProviderResultStatus`, `BillingProviderResultClientAction`, `BillingProviderResultClientActionType` — describe the outcome of provider operations
+- `BillingProviderResult`, `BillingProviderResultClientAction`, `BillingProviderResultClientActionType` — describe the outcome of provider operations
 
 The **core** never directly calls Stripe or PayPal itself. Instead, it calls a `BillingProvider` implementation supplied by a provider package (for example, `billing-stripe`).
 
@@ -286,8 +286,8 @@ $result = $manager->createSubscription(
     ],
 );
 
-if (! $result->isSuccessful()) {
-    // Inspect $result->status, $result->message, $result->clientAction, etc.
+if ($result->requiresAction()) {
+    // 
 }
 
 $subscription = $result->subscription;
@@ -343,11 +343,7 @@ if ($result->requiresClientAction()) {
     $action = $result->clientAction;
 
     if ($action->type()->isRedirect()) {
-        // Redirect the user to $action->url()
-    }
-
-    if ($action->type()->isSdkAction()) {
-        // Return instructions to your frontend to handle the SDK call
+        // Redirect the user to $action->url
     }
 }
 ```

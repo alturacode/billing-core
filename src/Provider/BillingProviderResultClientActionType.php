@@ -8,4 +8,14 @@ enum BillingProviderResultClientActionType
 {
     case None;
     case Redirect;
+
+    public function isRedirect(): bool
+    {
+        return $this === self::Redirect;
+    }
+
+    public function isNone(): bool
+    {
+        return $this === self::None;
+    }
 }
