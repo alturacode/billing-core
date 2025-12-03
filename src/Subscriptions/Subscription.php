@@ -161,19 +161,7 @@ final readonly class Subscription
     public function changePrimaryItem(SubscriptionItemId $newPrimaryId): Subscription
     {
         if (array_any($this->items, fn($item) => $item->id()->equals($newPrimaryId))) {
-            return new self(
-                $this->id,
-                $this->customerId,
-                $this->provider,
-                $this->name,
-                $this->status,
-                $this->items,
-                $newPrimaryId,
-                $this->createdAt,
-                $this->cancelAtPeriodEnd,
-                $this->trialEndsAt,
-                $this->canceledAt
-            );
+            return $this->copy(primaryItemId: $newPrimaryId);
         }
 
         throw new DomainException('Cannot set primary item to an item that is not part of the subscription.');
@@ -182,24 +170,12 @@ final readonly class Subscription
     public function changeItemQuantity(SubscriptionItemId $itemId, int $quantity): Subscription
     {
         if (array_any($this->items, fn($item) => $item->id()->equals($itemId))) {
-            return new self(
-                $this->id,
-                $this->customerId,
-                $this->provider,
-                $this->name,
-                $this->status,
-                array_map(
-                    fn(SubscriptionItem $item) => $item->id()->equals($itemId)
-                        ? $item->withQuantity($quantity)
-                        : $item,
-                    $this->items
-                ),
-                $this->primaryItemId,
-                $this->createdAt,
-                $this->cancelAtPeriodEnd,
-                $this->trialEndsAt,
-                $this->canceledAt
-            );
+            return $this->copy(items: array_map(
+                fn(SubscriptionItem $item) => $item->id()->equals($itemId)
+                    ? $item->withQuantity($quantity)
+                    : $item,
+                $this->items
+            ));
         }
 
         throw new DomainException('Cannot change quantity of item that is not part of the subscription.');
@@ -227,19 +203,12 @@ final readonly class Subscription
     ): Subscription
     {
         if (array_any($this->items, fn($item) => $item->id()->equals($itemId))) {
-            return new self(
-                $this->id,
-                $this->customerId,
-                $this->provider,
-                $this->name,
-                $this->status,
-                array_map(fn(SubscriptionItem $item) => $item->id()->equals($itemId) ? $item->withPeriodDates($currentPeriodStartsAt, $currentPeriodEndsAt) : $item, $this->items),
-                $this->primaryItemId,
-                $this->createdAt,
-                $this->cancelAtPeriodEnd,
-                $this->trialEndsAt,
-                $this->canceledAt
-            );
+            return $this->copy(items: array_map(
+                fn(SubscriptionItem $item) => $item->id()->equals($itemId)
+                    ? $item->withPeriodDates($currentPeriodStartsAt, $currentPeriodEndsAt)
+                    : $item,
+                $this->items
+            ));
         }
 
         throw new DomainException('Cannot set period dates of item that is not part of the subscription.');
@@ -255,18 +224,7 @@ final readonly class Subscription
             throw new DomainException('Cannot activate a canceled subscription.');
         }
 
-        return new self(
-            id: $this->id,
-            customerId: $this->customerId,
-            provider: $this->provider,
-            name: $this->name,
-            status: SubscriptionStatus::Active,
-            items: $this->items,
-            primaryItemId: $this->primaryItemId,
-            createdAt: $this->createdAt,
-            cancelAtPeriodEnd: $this->cancelAtPeriodEnd,
-            trialEndsAt: $this->trialEndsAt,
-        );
+        return $this->copy(status: SubscriptionStatus::Active);
     }
 
     public function cancel(bool $atPeriodEnd = true): Subscription
@@ -275,17 +233,9 @@ final readonly class Subscription
             return $this;
         }
 
-        return new self(
-            id: $this->id,
-            customerId: $this->customerId,
-            provider: $this->provider,
-            name: $this->name,
+        return $this->copy(
             status: $atPeriodEnd ? $this->status : SubscriptionStatus::Canceled,
-            items: $this->items,
-            primaryItemId: $this->primaryItemId,
-            createdAt: $this->createdAt,
             cancelAtPeriodEnd: $atPeriodEnd,
-            trialEndsAt: $this->trialEndsAt,
             canceledAt: $atPeriodEnd ? null : new DateTimeImmutable(),
         );
     }
@@ -296,17 +246,8 @@ final readonly class Subscription
             throw new DomainException('Cannot pause a canceled subscription.');
         }
 
-        return new self(
-            id: $this->id,
-            customerId: $this->customerId,
-            provider: $this->provider,
-            name: $this->name,
+        return $this->copy(
             status: SubscriptionStatus::Paused,
-            items: $this->items,
-            primaryItemId: $this->primaryItemId,
-            createdAt: $this->createdAt,
-            cancelAtPeriodEnd: $this->cancelAtPeriodEnd,
-            trialEndsAt: $this->trialEndsAt,
             canceledAt: null,
         );
     }
@@ -360,5 +301,34 @@ final readonly class Subscription
         if ($this->canceledAt !== null && $this->status !== SubscriptionStatus::Canceled) {
             throw new DomainException('CanceledAt can only be set when subscription is canceled.');
         }
+    }
+
+    /** @noinspection PhpSameParameterValueInspection */
+    private function copy(
+        ?SubscriptionId         $id = null,
+        ?SubscriptionCustomerId $customerId = null,
+        ?SubscriptionProvider   $provider = null,
+        ?SubscriptionName       $name = null,
+        ?SubscriptionStatus     $status = null,
+        ?array                  $items = null,
+        ?SubscriptionItemId     $primaryItemId = null,
+        ?DateTimeImmutable      $createdAt = null,
+        ?bool                   $cancelAtPeriodEnd = null,
+        ?DateTimeImmutable      $trialEndsAt = null,
+        ?DateTimeImmutable      $canceledAt = null,
+    ): self {
+        return new self(
+            id: $id ?? $this->id,
+            customerId: $customerId ?? $this->customerId,
+            provider: $provider ?? $this->provider,
+            name: $name ?? $this->name,
+            status: $status ?? $this->status,
+            items: $items ?? $this->items,
+            primaryItemId: $primaryItemId ?? $this->primaryItemId,
+            createdAt: $createdAt ?? $this->createdAt,
+            cancelAtPeriodEnd: $cancelAtPeriodEnd ?? $this->cancelAtPeriodEnd,
+            trialEndsAt: $trialEndsAt ?? $this->trialEndsAt,
+            canceledAt: $canceledAt ?? $this->canceledAt,
+        );
     }
 }
