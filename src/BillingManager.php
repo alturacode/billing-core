@@ -4,15 +4,21 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core;
 
+use AlturaCode\Billing\Core\Products\Product;
+use AlturaCode\Billing\Core\Products\ProductId;
+use AlturaCode\Billing\Core\Products\ProductKind;
+use AlturaCode\Billing\Core\Products\ProductPriceId;
+use AlturaCode\Billing\Core\Products\ProductRepository;
 use AlturaCode\Billing\Core\Provider\BillingProviderRegistry;
 use AlturaCode\Billing\Core\Provider\BillingProviderResult;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionCustomerId;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionProvider;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionRepository;
 use DateTimeImmutable;
 use RuntimeException;
-use Symfony\Component\Uid\Ulid;
 
 final readonly class BillingManager
 {
@@ -56,12 +62,12 @@ final readonly class BillingManager
         }
 
         $products = $this->products->findMultipleByPriceIds([
-            new ProductPriceId(new Ulid($priceId)),
-            ...array_map(fn($addon) => new ProductPriceId(new Ulid($addon['priceId'])), $addons),
+            PRoductPriceId::fromString($priceId),
+            ...array_map(fn($addon) => ProductPriceId::fromString($addon['priceId']), $addons),
         ]);
 
         $primaryProduct = array_find($products, fn(Product $product) => $product->id()->equals(
-            new ProductId(new Ulid($priceId))
+            ProductId::fromString($priceId)
         ));
 
         if ($primaryProduct === null) {
@@ -72,17 +78,17 @@ final readonly class BillingManager
             throw new RuntimeException('Primary product must be a plan.');
         }
 
-        $primaryPrice = $primaryProduct->findPrice(new ProductPriceId(new Ulid($priceId)));
+        $primaryPrice = $primaryProduct->findPrice(ProductPriceId::fromString($priceId));
 
         // Ensure all addons are defined in some product
         foreach ($addons as $addon) {
-            $product = array_find($products, fn(Product $product) => $product->hasPrice(new ProductPriceId(new Ulid($addon['priceId']))));
+            $product = array_find($products, fn(Product $product) => $product->hasPrice(ProductPriceId::fromString($addon['priceId'])));
             if ($product === null) {
                 throw new RuntimeException(sprintf('Product with price ID %s not found', $addon['priceId']));
             }
 
             // Ensure addon price currency is the same as primary price currency
-            if ($product->findPrice(new ProductPriceId(new Ulid($addon['priceId'])))->price()->currency()->equals($primaryPrice->price()->currency()) === false) {
+            if ($product->findPrice(ProductPriceId::fromString($addon['priceId']))->price()->currency()->equals($primaryPrice->price()->currency()) === false) {
                 throw new RuntimeException(sprintf('Addon price currency must match primary price currency. Addon price ID: %s', $addon['priceId']));
             }
         }
@@ -114,7 +120,7 @@ final readonly class BillingManager
         array  $providerOptions = []
     ): BillingProviderResult
     {
-        $subscription = $this->subscriptions->find(new SubscriptionId(new Ulid($subscriptionId)));
+        $subscription = $this->subscriptions->find(SubscriptionId::fromString($subscriptionId));
 
         if ($subscription === null) {
             throw new RuntimeException('Subscription not found');
@@ -132,7 +138,7 @@ final readonly class BillingManager
         array  $providerOptions = []
     ): BillingProviderResult
     {
-        $subscription = $this->subscriptions->find(new SubscriptionId(new Ulid($subscriptionId)));
+        $subscription = $this->subscriptions->find(SubscriptionId::fromString($subscriptionId));
 
         if ($subscription === null) {
             throw new RuntimeException('Subscription not found');
@@ -150,7 +156,7 @@ final readonly class BillingManager
         array  $providerOptions = []
     ): BillingProviderResult
     {
-        $subscription = $this->subscriptions->find(new SubscriptionId(new Ulid($subscriptionId)));
+        $subscription = $this->subscriptions->find(SubscriptionId::fromString($subscriptionId));
 
         if ($subscription === null) {
             throw new RuntimeException('Subscription not found');

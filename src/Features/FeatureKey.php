@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlturaCode\Billing\Core;
+namespace AlturaCode\Billing\Core\Features;
 
 use InvalidArgumentException;
 use Stringable;

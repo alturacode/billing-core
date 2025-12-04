@@ -2,23 +2,31 @@
 
 declare(strict_types=1);
 
-namespace AlturaCode\Billing\Core;
+namespace AlturaCode\Billing\Core\Subscriptions;
 
+use InvalidArgumentException;
 use Stringable;
 
 final readonly class SubscriptionCustomerId implements Stringable
 {
-    public function __construct(private string $value)
+    public function __construct(private mixed $value)
     {
+        if (empty($this->value)) {
+            throw new InvalidArgumentException('Subscription customer id cannot be empty');
+        }
+
+        if (!is_string($this->value) && !is_int($this->value)) {
+            throw new InvalidArgumentException('Subscription customer id should be a string or integer');
+        }
     }
 
-    public function value(): string
+    public function value(): mixed
     {
         return $this->value;
     }
 
     public function __toString(): string
     {
-        return $this->value;
+        return (string)$this->value;
     }
 }

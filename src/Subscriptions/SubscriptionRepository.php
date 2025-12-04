@@ -2,9 +2,6 @@
 
 namespace AlturaCode\Billing\Core\Subscriptions;
 
-use AlturaCode\Billing\Core\SubscriptionCustomerId;
-use AlturaCode\Billing\Core\SubscriptionId;
-
 interface SubscriptionRepository
 {
     public function find(SubscriptionId $subscriptionId): ?Subscription;

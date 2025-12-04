@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlturaCode\Billing\Core;
+namespace AlturaCode\Billing\Core\Products;
 
 use Stringable;
 use Symfony\Component\Uid\Ulid;
@@ -16,6 +16,11 @@ final readonly class ProductId implements Stringable
     public static function generate(): ProductId
     {
         return new ProductId(new Ulid());
+    }
+
+    public static function fromString(string $value): ProductId
+    {
+        return new ProductId(Ulid::fromString($value));
     }
 
     public function value(): string

@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AlturaCode\Billing\Core;
+namespace AlturaCode\Billing\Core\Products;
 
+use AlturaCode\Billing\Core\Features\FeatureKey;
+use AlturaCode\Billing\Core\Features\FeatureKind;
 use LogicException;
 
 final readonly class ProductFeature

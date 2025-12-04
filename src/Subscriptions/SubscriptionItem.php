@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace AlturaCode\Billing\Core\Subscriptions;
 
 use AlturaCode\Billing\Core\Money;
-use AlturaCode\Billing\Core\ProductPriceId;
-use AlturaCode\Billing\Core\SubscriptionItemId;
+use AlturaCode\Billing\Core\Products\ProductPriceId;
 use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;

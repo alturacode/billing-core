@@ -1,6 +1,6 @@
 <?php
 
-namespace AlturaCode\Billing\Core;
+namespace AlturaCode\Billing\Core\Products;
 
 enum ProductKind: string
 {

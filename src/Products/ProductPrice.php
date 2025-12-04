@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlturaCode\Billing\Core;
+namespace AlturaCode\Billing\Core\Products;
+
+use AlturaCode\Billing\Core\Money;
 
 final readonly class ProductPrice
 {

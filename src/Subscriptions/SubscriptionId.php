@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlturaCode\Billing\Core;
+namespace AlturaCode\Billing\Core\Subscriptions;
 
 use Stringable;
 use Symfony\Component\Uid\Ulid;
@@ -16,6 +16,11 @@ final readonly class SubscriptionId implements Stringable
     public static function generate(): SubscriptionId
     {
         return new SubscriptionId(new Ulid());
+    }
+
+    public static function fromString(string $value): SubscriptionId
+    {
+        return new SubscriptionId(Ulid::fromString($value));
     }
 
     public function value(): string
