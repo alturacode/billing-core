@@ -9,7 +9,7 @@ use Symfony\Component\Uid\Ulid;
 
 final readonly class SubscriptionId implements Stringable
 {
-    public function __construct(private Ulid $value)
+    private function __construct(private Ulid $value)
     {
     }
 

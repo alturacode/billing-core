@@ -9,7 +9,7 @@ use Stringable;
 
 final readonly class SubscriptionName implements Stringable
 {
-    public function __construct(private string $value)
+    private function __construct(private string $value)
     {
         if (empty($this->value)) {
             throw new InvalidArgumentException('Subscription name cannot be empty');
@@ -18,6 +18,11 @@ final readonly class SubscriptionName implements Stringable
         if (preg_match('/[^a-zA-Z0-9_]/', $this->value)) {
             throw new InvalidArgumentException('Subscription name should only contain lowercase letters, numbers and underscores');
         }
+    }
+
+    public static function fromString(string $value): SubscriptionName
+    {
+        return new self($value);
     }
 
     public function value(): string

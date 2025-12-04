@@ -18,6 +18,17 @@ final readonly class Feature
     {
     }
 
+    public static function hydrate(array $data): self
+    {
+        return new self(
+            FeatureKey::fromString($data['key']),
+            FeatureKind::from($data['kind']),
+            $data['name'],
+            $data['description'] ?? null,
+            isset($data['unit']) ? FeatureUnit::hydrate($data['unit']) : null
+        );
+    }
+
     public static function createFlag(FeatureKey $key, string $name): self
     {
         return new self($key, FeatureKind::Flag, $name);

@@ -28,6 +28,11 @@ final readonly class SubscriptionItem
         $this->assertValidPeriod();
     }
 
+    public static function create(SubscriptionItemId $id, ProductPriceId $priceId, int $quantity, Money $price): self
+    {
+        return new self($id, $priceId, $quantity, $price);
+    }
+
     public function id(): SubscriptionItemId
     {
         return $this->id;

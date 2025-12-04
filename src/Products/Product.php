@@ -24,15 +24,17 @@ final readonly class Product
         $this->assertValid();
     }
 
-    public static function create(
-        ProductId   $id,
-        ProductKind $kind,
-        ProductSlug $slug,
-        string      $name,
-        string      $description,
-    ): self
+    public static function hydrate(array $data): self
     {
-        return new self($id, $kind, $slug, $name, $description, [], []);
+        return new self(
+            ProductId::fromString($data['id']),
+            ProductKind::from($data['kind']),
+            ProductSlug::fromString($data['slug']),
+            $data['name'],
+            $data['description'],
+            array_map(fn($price) => ProductPrice::hydrate($price), $data['prices']),
+            array_map(fn($feature) => ProductFeature::hydrate($feature), $data['features'])
+        );
     }
 
     public function withPrices(ProductPrice ...$prices): self
@@ -83,6 +85,13 @@ final readonly class Product
     public function hasPrice(ProductPriceId $productPriceId): bool
     {
         return array_find($this->prices, fn($price) => $price->id()->equals($productPriceId)) !== false;
+    }
+
+    public function hasAnyPrice(ProductPriceId ...$productPriceIds): bool
+    {
+        return array_reduce($productPriceIds,
+            fn($carry, $productPriceId) => $carry || array_any($this->prices,
+                    fn($price) => $price->id()->equals($productPriceId)), false);
     }
 
     public function findPrice(ProductPriceId $productPriceId): ProductPrice

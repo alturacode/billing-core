@@ -9,13 +9,13 @@ use Symfony\Component\Uid\Ulid;
 
 final readonly class ProductPriceId implements Stringable
 {
-    public function __construct(private Ulid $value)
+    private function __construct(private Ulid $value)
     {
     }
 
-    public static function generate(): ProductId
+    public static function generate(): ProductPriceId
     {
-        return new ProductId(new Ulid());
+        return new ProductPriceId(new Ulid());
     }
 
     public static function fromString(string $value): ProductPriceId

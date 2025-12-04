@@ -8,23 +8,38 @@ use InvalidArgumentException;
 
 final readonly class ProductPriceInterval
 {
-    public function __construct(
-        private string $interval,
-        private int    $intervalCount
+    private function __construct(
+        private string $type,
+        private int $count
     )
     {
-        if (!in_array($this->interval, ['day', 'week', 'month', 'year'])) {
+        if (!in_array($this->type, ['day', 'week', 'month', 'year'])) {
             throw new InvalidArgumentException(sprintf(
                 'Incorrect interval "%s". Allowed values are: day, week, month, year',
-                $this->interval
+                $this->type
             ));
         }
 
-        if ($this->intervalCount < 1) {
+        if ($this->count < 1) {
             throw new InvalidArgumentException(sprintf(
                 'Interval count must be greater than 0, %d given',
-                $this->intervalCount
+                $this->count
             ));
         }
+    }
+
+    public static function hydrate(array $data): self
+    {
+        return new self($data['type'], $data['count']);
+    }
+
+    public function type(): string
+    {
+        return $this->type;
+    }
+
+    public function count(): int
+    {
+        return $this->count;
     }
 }

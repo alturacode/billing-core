@@ -6,11 +6,16 @@ namespace AlturaCode\Billing\Core;
 
 final readonly class Money
 {
-    public function __construct(
+    private function __construct(
         private int      $amount,
         private Currency $currency
     )
     {
+    }
+
+    public static function hydrate(array $data): self
+    {
+        return new self($data['amount'], Currency::fromString($data['currency']));
     }
 
     public function amount(): int

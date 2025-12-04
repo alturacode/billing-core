@@ -20,6 +20,11 @@ final readonly class SubscriptionCustomerId implements Stringable
         }
     }
 
+    public static function fromString(string $value): SubscriptionCustomerId
+    {
+        return new self($value);
+    }
+
     public function value(): mixed
     {
         return $this->value;

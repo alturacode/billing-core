@@ -13,6 +13,11 @@ final readonly class FeatureUnit
     {
     }
 
+    public static function hydrate(array $data): self
+    {
+        return new self($data['singular'], $data['plural']);
+    }
+
     public static function create(string $singular, string $plural): self
     {
         return new self($singular, $plural);

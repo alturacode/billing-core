@@ -9,13 +9,18 @@ use Stringable;
 
 final readonly class FeatureKey implements Stringable
 {
-    public function __construct(
+    private function __construct(
         private string $value
     )
     {
         if (!preg_match('/^[a-z0-9_]+$/', $this->value)) {
             throw new InvalidArgumentException('Feature key should only contain lowercase letters, numbers and underscores');
         }
+    }
+
+    public static function fromString(string $value): FeatureKey
+    {
+        return new self($value);
     }
 
     public function value(): string

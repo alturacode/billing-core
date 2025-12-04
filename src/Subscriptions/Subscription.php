@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Subscriptions;
 
-use AlturaCode\Billing\Core\Money;
-use AlturaCode\Billing\Core\Products\ProductPriceId;
 use DateTimeImmutable;
 use DomainException;
 
@@ -42,49 +40,26 @@ final readonly class Subscription
         $this->assertPrimaryItemRequired();
         $this->assertAllItemsHaveSameCurrency();
         $this->assertAllItemsHavePeriodDatesWhenActive();
+        $this->assertNotDuplicateItems();
         $this->assertCanceledMatchesStatus();
     }
 
-    /**
-     * @param SubscriptionName $name
-     * @param SubscriptionCustomerId $customerId
-     * @param ProductPriceId $productPriceId
-     * @param Money $price
-     * @param SubscriptionProvider $provider
-     * @param int $quantity
-     * @param DateTimeImmutable|null $trialEndsAt
-     * @param array<array{priceId: ProductPriceId, quantity: int, price: Money}> $items
-     * @return Subscription
-     */
     public static function create(
+        SubscriptionId         $id,
         SubscriptionName       $name,
         SubscriptionCustomerId $customerId,
-        ProductPriceId         $productPriceId,
-        Money                  $price,
         SubscriptionProvider   $provider,
-        int                    $quantity = 1,
         ?DateTimeImmutable     $trialEndsAt = null,
-        array                  $items = [],
     ): Subscription
     {
         return new self(
-            id: SubscriptionId::generate(),
+            id: $id,
             customerId: $customerId,
             provider: $provider,
             name: $name,
             status: SubscriptionStatus::Incomplete,
-            items: [new SubscriptionItem(
-                id: $primaryItemId = SubscriptionItemId::generate(),
-                priceId: $productPriceId,
-                quantity: $quantity,
-                price: $price,
-            ), ...array_map(fn($item) => new SubscriptionItem(
-                id: SubscriptionItemId::generate(),
-                priceId: $item['priceId'],
-                quantity: $item['quantity'],
-                price: $item['price'],
-            ), $items)],
-            primaryItemId: $primaryItemId,
+            items: [],
+            primaryItemId: null,
             createdAt: new DateTimeImmutable(),
             trialEndsAt: $trialEndsAt
         );
@@ -259,6 +234,24 @@ final readonly class Subscription
         );
     }
 
+    public function withItems(SubscriptionItem ...$items): Subscription
+    {
+        return $this->copy(items: $items);
+    }
+
+    public function withPrimaryItem(SubscriptionItem $item): Subscription
+    {
+        if ($item->id()->equals($this->primaryItemId)) {
+            return $this;
+        }
+
+        if ($this->hasItem($item->id())) {
+            return $this->changePrimaryItem($item->id());
+        }
+
+        return $this->copy(items: array_merge($this->items, [$item]))->changePrimaryItem($item->id());
+    }
+
     private function assertAtLeastOneItemWhenActive(): void
     {
         if ($this->isActive() && empty($this->items)) {
@@ -342,5 +335,13 @@ final readonly class Subscription
             trialEndsAt: $trialEndsAt ?? $this->trialEndsAt,
             canceledAt: $canceledAt ?? $this->canceledAt,
         );
+    }
+
+    private function assertNotDuplicateItems(): void
+    {
+        $itemIds = array_map(fn(SubscriptionItem $item) => $item->id()->value(), $this->items);
+        if (count(array_unique($itemIds)) !== count($itemIds)) {
+            throw new DomainException(sprintf('Subscription items must have unique IDs. Duplicate ID found: %s', implode(', ', array_keys(array_filter(array_count_values($itemIds), fn($count) => $count > 1)))));
+        }
     }
 }

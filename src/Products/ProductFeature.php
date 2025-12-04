@@ -10,7 +10,7 @@ use LogicException;
 
 final readonly class ProductFeature
 {
-    public function __construct(
+    private function __construct(
         private FeatureKey  $key,
         private FeatureKind $kind,
         private ?int        $limit,
@@ -24,15 +24,18 @@ final readonly class ProductFeature
         $this->assertValid();
     }
 
-    private function assertValid(): void
+    public static function hydrate(array $data): self
     {
-        if ($this->kind === FeatureKind::Flag && $this->limit !== null) {
-            throw new LogicException('Flag features cannot have a limit.');
-        }
-
-        if ($this->kind === FeatureKind::Limit && $this->limit !== null && $this->limit < 0) {
-            throw new LogicException('Limit cannot be negative.');
-        }
+        return new self(
+            FeatureKey::fromString($data['key']),
+            FeatureKind::from($data['kind']),
+            $data['limit'] ?? null,
+            $data['enabledByDefault'],
+            $data['name'] ?? null,
+            $data['description'] ?? null,
+            $data['unit'] ?? null,
+            $data['sortOrder'] ?? 0
+        );
     }
 
     public function key(): FeatureKey
@@ -90,5 +93,16 @@ final readonly class ProductFeature
     public function sortOrder(): int
     {
         return $this->sortOrder;
+    }
+
+    private function assertValid(): void
+    {
+        if ($this->kind === FeatureKind::Flag && $this->limit !== null) {
+            throw new LogicException('Flag features cannot have a limit.');
+        }
+
+        if ($this->kind === FeatureKind::Limit && $this->limit !== null && $this->limit < 0) {
+            throw new LogicException('Limit cannot be negative.');
+        }
     }
 }

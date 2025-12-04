@@ -14,6 +14,8 @@ use AlturaCode\Billing\Core\Provider\BillingProviderResult;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionCustomerId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionItem;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionProvider;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionRepository;
@@ -53,8 +55,8 @@ final readonly class BillingManager
     ): BillingProviderResult
     {
         $subscription = $this->subscriptions->findForCustomer(
-            new SubscriptionCustomerId($customerId),
-            new SubscriptionName($name),
+            SubscriptionCustomerId::fromString($customerId),
+            SubscriptionName::fromString($name),
         );
 
         if ($subscription && $subscription->isActive()) {
@@ -62,10 +64,11 @@ final readonly class BillingManager
         }
 
         $products = $this->products->findMultipleByPriceIds([
-            PRoductPriceId::fromString($priceId),
+            ProductPriceId::fromString($priceId),
             ...array_map(fn($addon) => ProductPriceId::fromString($addon['priceId']), $addons),
         ]);
 
+        /** @var Product $primaryProduct */
         $primaryProduct = array_find($products, fn(Product $product) => $product->id()->equals(
             ProductId::fromString($priceId)
         ));
@@ -94,18 +97,23 @@ final readonly class BillingManager
         }
 
         $subscription = Subscription::create(
-            name: new SubscriptionName($name),
-            customerId: new SubscriptionCustomerId($customerId),
-            productPriceId: $primaryPrice->id(),
-            price: $primaryPrice->price(),
+            id: SubscriptionId::generate(),
+            name: SubscriptionName::fromString($name),
+            customerId: SubscriptionCustomerId::fromString($customerId),
             provider: new SubscriptionProvider($provider),
+            trialEndsAt: $trialEndsAt
+        )->withItems(...array_map(fn($addon) => SubscriptionItem::create(
+                id: SubscriptionItemId::generate(),            
+                priceId: ProductPriceId::fromString($addon['priceId']),
+                quantity: $addon['quantity'],
+                price: array_find($products, fn(Product $product) => $product->hasPrice(ProductPriceId::fromString($addon['priceId'])))?->findPrice(ProductPriceId::fromString($addon['priceId']))?->price(),
+            ), $addons)
+        )->withPrimaryItem(SubscriptionItem::create(
+            id: SubscriptionItemId::generate(),
+            priceId: ProductPriceId::fromString($priceId),
             quantity: $quantity,
-            trialEndsAt: $trialEndsAt,
-            items: array_map(fn($addon) => [
-                'priceId' => new ProductPriceId($addon['priceId']),
-                'quantity' => $addon['quantity'],
-            ], $addons)
-        ); // status = Incomplete
+            price: $primaryPrice->price(),
+        )); // status = Incomplete
 
         $gateway = $this->provider->subscriptionProviderFor($provider);
         $result = $gateway->create($subscription, $providerOptions);
