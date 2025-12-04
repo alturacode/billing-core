@@ -9,7 +9,7 @@ use RuntimeException;
 
 final readonly class Product
 {
-    public function __construct(
+    private function __construct(
         private ProductId   $id,
         private ProductKind $kind,
         private ProductSlug $slug,
@@ -24,21 +24,25 @@ final readonly class Product
         $this->assertValid();
     }
 
-    private function assertValid(): void
+    public static function create(
+        ProductId   $id,
+        ProductKind $kind,
+        ProductSlug $slug,
+        string      $name,
+        string      $description,
+    ): self
     {
-        // assert prices are an instance of PlanPrice
-        foreach ($this->prices as $price) {
-            if (!$price instanceof ProductPrice) {
-                throw new InvalidArgumentException('Plan prices must be instances of PlanPrice');
-            }
-        }
+        return new self($id, $kind, $slug, $name, $description, [], []);
+    }
 
-        // assert features are an instance of PlanFeature
-        foreach ($this->features as $feature) {
-            if (!$feature instanceof ProductFeature) {
-                throw new InvalidArgumentException('Plan features must be instances of PlanFeature');
-            }
-        }
+    public function withPrices(ProductPrice ...$prices): self
+    {
+        return new self($this->id, $this->kind, $this->slug, $this->name, $this->description, $prices, $this->features);
+    }
+
+    public function withFeatures(ProductFeature ...$features): self
+    {
+        return new self($this->id, $this->kind, $this->slug, $this->name, $this->description, $this->prices, $features);
     }
 
     public function id(): ProductId
@@ -89,5 +93,22 @@ final readonly class Product
             }
         }
         throw new RuntimeException('Product price not found');
+    }
+
+    private function assertValid(): void
+    {
+        // assert prices are an instance of PlanPrice
+        foreach ($this->prices as $price) {
+            if (!$price instanceof ProductPrice) {
+                throw new InvalidArgumentException('Plan prices must be instances of PlanPrice');
+            }
+        }
+
+        // assert features are an instance of PlanFeature
+        foreach ($this->features as $feature) {
+            if (!$feature instanceof ProductFeature) {
+                throw new InvalidArgumentException('Plan features must be instances of PlanFeature');
+            }
+        }
     }
 }

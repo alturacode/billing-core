@@ -24,14 +24,14 @@ final readonly class Subscription
      * @param DateTimeImmutable|null $trialEndsAt
      * @param DateTimeImmutable|null $canceledAt
      */
-    public function __construct(
+    private function __construct(
         private SubscriptionId         $id,
         private SubscriptionCustomerId $customerId,
         private SubscriptionProvider   $provider,
         private SubscriptionName       $name,
         private SubscriptionStatus     $status,
         private array                  $items,
-        private ?SubscriptionItemId     $primaryItemId,
+        private ?SubscriptionItemId    $primaryItemId,
         private DateTimeImmutable      $createdAt,
         private bool                   $cancelAtPeriodEnd = false,
         private ?DateTimeImmutable     $trialEndsAt = null,
@@ -327,7 +327,8 @@ final readonly class Subscription
         ?bool                   $cancelAtPeriodEnd = null,
         ?DateTimeImmutable      $trialEndsAt = null,
         ?DateTimeImmutable      $canceledAt = null,
-    ): self {
+    ): self
+    {
         return new self(
             id: $id ?? $this->id,
             customerId: $customerId ?? $this->customerId,
