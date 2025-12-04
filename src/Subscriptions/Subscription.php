@@ -18,7 +18,7 @@ final readonly class Subscription
      * @param SubscriptionName $name
      * @param SubscriptionStatus $status
      * @param array<SubscriptionItem> $items
-     * @param SubscriptionItemId $primaryItemId
+     * @param SubscriptionItemId|null $primaryItemId
      * @param DateTimeImmutable $createdAt
      * @param bool $cancelAtPeriodEnd
      * @param DateTimeImmutable|null $trialEndsAt
@@ -31,14 +31,14 @@ final readonly class Subscription
         private SubscriptionName       $name,
         private SubscriptionStatus     $status,
         private array                  $items,
-        private SubscriptionItemId     $primaryItemId,
+        private ?SubscriptionItemId     $primaryItemId,
         private DateTimeImmutable      $createdAt,
         private bool                   $cancelAtPeriodEnd = false,
         private ?DateTimeImmutable     $trialEndsAt = null,
         private ?DateTimeImmutable     $canceledAt = null,
     )
     {
-        $this->assertAtLeastOneItem();
+        $this->assertAtLeastOneItemWhenActive();
         $this->assertPrimaryItemRequired();
         $this->assertAllItemsHaveSameCurrency();
         $this->assertAllItemsHavePeriodDatesWhenActive();
@@ -217,10 +217,6 @@ final readonly class Subscription
             return $this;
         }
 
-        if ($this->status === SubscriptionStatus::Canceled) {
-            throw new DomainException('Cannot activate a canceled subscription.');
-        }
-
         return $this->copy(status: SubscriptionStatus::Active);
     }
 
@@ -263,9 +259,9 @@ final readonly class Subscription
         );
     }
 
-    private function assertAtLeastOneItem(): void
+    private function assertAtLeastOneItemWhenActive(): void
     {
-        if (empty($this->items)) {
+        if ($this->isActive() && empty($this->items)) {
             throw new DomainException('Subscription must have at least one item.');
         }
     }
@@ -311,6 +307,10 @@ final readonly class Subscription
     {
         if ($this->canceledAt !== null && $this->status !== SubscriptionStatus::Canceled) {
             throw new DomainException('CanceledAt can only be set when subscription is canceled.');
+        }
+
+        if ($this->canceledAt === null && $this->status === SubscriptionStatus::Canceled) {
+            throw new DomainException('CanceledAt cannot be null when subscription is canceled.');
         }
     }
 
