@@ -11,7 +11,7 @@ final readonly class Subscription
 {
     /**
      * @param SubscriptionId $id
-     * @param SubscriptionCustomerId $customerId
+     * @param SubscriptionBillable $billable
      * @param SubscriptionProvider $provider
      * @param SubscriptionName $name
      * @param SubscriptionStatus $status
@@ -23,17 +23,17 @@ final readonly class Subscription
      * @param DateTimeImmutable|null $canceledAt
      */
     private function __construct(
-        private SubscriptionId         $id,
-        private SubscriptionCustomerId $customerId,
-        private SubscriptionProvider   $provider,
-        private SubscriptionName       $name,
-        private SubscriptionStatus     $status,
-        private array                  $items,
-        private ?SubscriptionItemId    $primaryItemId,
-        private DateTimeImmutable      $createdAt,
-        private bool                   $cancelAtPeriodEnd = false,
-        private ?DateTimeImmutable     $trialEndsAt = null,
-        private ?DateTimeImmutable     $canceledAt = null,
+        private SubscriptionId       $id,
+        private SubscriptionBillable $billable,
+        private SubscriptionProvider $provider,
+        private SubscriptionName     $name,
+        private SubscriptionStatus   $status,
+        private array                $items,
+        private ?SubscriptionItemId  $primaryItemId,
+        private DateTimeImmutable    $createdAt,
+        private bool                 $cancelAtPeriodEnd = false,
+        private ?DateTimeImmutable   $trialEndsAt = null,
+        private ?DateTimeImmutable   $canceledAt = null,
     )
     {
         $this->assertAtLeastOneItemWhenNotIncomplete();
@@ -48,7 +48,7 @@ final readonly class Subscription
     {
         return new self(
             id: SubscriptionId::hydrate($data['id']),
-            customerId: SubscriptionCustomerId::hydrate($data['customer_id']),
+            billable: SubscriptionBillable::hydrate($data['billable']),
             provider: SubscriptionProvider::hydrate($data['provider']),
             name: SubscriptionName::hydrate($data['name']),
             status: SubscriptionStatus::from($data['status']),
@@ -62,16 +62,16 @@ final readonly class Subscription
     }
 
     public static function create(
-        SubscriptionId         $id,
-        SubscriptionName       $name,
-        SubscriptionCustomerId $customerId,
-        SubscriptionProvider   $provider,
-        ?DateTimeImmutable     $trialEndsAt = null,
+        SubscriptionId       $id,
+        SubscriptionName     $name,
+        SubscriptionBillable $billable,
+        SubscriptionProvider $provider,
+        ?DateTimeImmutable   $trialEndsAt = null,
     ): Subscription
     {
         return new self(
             id: $id,
-            customerId: $customerId,
+            billable: $billable,
             provider: $provider,
             name: $name,
             status: SubscriptionStatus::Incomplete,
@@ -87,9 +87,9 @@ final readonly class Subscription
         return $this->id;
     }
 
-    public function customerId(): SubscriptionCustomerId
+    public function billable(): SubscriptionBillable
     {
-        return $this->customerId;
+        return $this->billable;
     }
 
     public function provider(): SubscriptionProvider
@@ -333,22 +333,22 @@ final readonly class Subscription
 
     /** @noinspection PhpSameParameterValueInspection */
     private function copy(
-        ?SubscriptionId         $id = null,
-        ?SubscriptionCustomerId $customerId = null,
-        ?SubscriptionProvider   $provider = null,
-        ?SubscriptionName       $name = null,
-        ?SubscriptionStatus     $status = null,
-        ?array                  $items = null,
-        ?SubscriptionItemId     $primaryItemId = null,
-        ?DateTimeImmutable      $createdAt = null,
-        ?bool                   $cancelAtPeriodEnd = null,
-        ?DateTimeImmutable      $trialEndsAt = null,
-        ?DateTimeImmutable      $canceledAt = null,
+        ?SubscriptionId       $id = null,
+        ?SubscriptionBillable $billable = null,
+        ?SubscriptionProvider $provider = null,
+        ?SubscriptionName     $name = null,
+        ?SubscriptionStatus   $status = null,
+        ?array                $items = null,
+        ?SubscriptionItemId   $primaryItemId = null,
+        ?DateTimeImmutable    $createdAt = null,
+        ?bool                 $cancelAtPeriodEnd = null,
+        ?DateTimeImmutable    $trialEndsAt = null,
+        ?DateTimeImmutable    $canceledAt = null,
     ): self
     {
         return new self(
             id: $id ?? $this->id,
-            customerId: $customerId ?? $this->customerId,
+            billable: $billable ?? $this->billable,
             provider: $provider ?? $this->provider,
             name: $name ?? $this->name,
             status: $status ?? $this->status,

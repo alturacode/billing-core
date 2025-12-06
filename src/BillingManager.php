@@ -12,7 +12,7 @@ use AlturaCode\Billing\Core\Products\ProductRepository;
 use AlturaCode\Billing\Core\Provider\BillingProviderRegistry;
 use AlturaCode\Billing\Core\Provider\BillingProviderResult;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionCustomerId;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionBillable;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItem;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemId;
@@ -34,7 +34,8 @@ final readonly class BillingManager
 
     /**
      * @param string $name
-     * @param string $customerId
+     * @param string $billableId
+     * @param string $billableType
      * @param string $priceId
      * @param string $provider
      * @param int $quantity
@@ -45,7 +46,8 @@ final readonly class BillingManager
      */
     public function createSubscription(
         string             $name,
-        string             $customerId,
+        string             $billableId,
+        string             $billableType,
         string             $priceId,
         string             $provider,
         int                $quantity = 1,
@@ -54,8 +56,8 @@ final readonly class BillingManager
         array              $providerOptions = []
     ): BillingProviderResult
     {
-        $subscription = $this->subscriptions->findForCustomer(
-            SubscriptionCustomerId::fromString($customerId),
+        $subscription = $this->subscriptions->findForBillable(
+            SubscriptionBillable::fromString($billableType, $billableId),
             SubscriptionName::fromString($name),
         );
 
@@ -99,11 +101,11 @@ final readonly class BillingManager
         $subscription = Subscription::create(
             id: SubscriptionId::generate(),
             name: SubscriptionName::fromString($name),
-            customerId: SubscriptionCustomerId::fromString($customerId),
+            billable: SubscriptionBillable::fromString($billableType, $billableId),
             provider: SubscriptionProvider::fromString($provider),
             trialEndsAt: $trialEndsAt
         )->withItems(...array_map(fn($addon) => SubscriptionItem::create(
-                id: SubscriptionItemId::generate(),            
+                id: SubscriptionItemId::generate(),
                 priceId: ProductPriceId::fromString($addon['priceId']),
                 quantity: $addon['quantity'],
                 price: array_find($products, fn(Product $product) => $product->hasPrice(ProductPriceId::fromString($addon['priceId'])))?->findPrice(ProductPriceId::fromString($addon['priceId']))?->price(),

@@ -6,9 +6,9 @@ interface SubscriptionRepository
 {
     public function find(SubscriptionId $subscriptionId): ?Subscription;
     public function save(Subscription $subscription): void;
-    public function findForCustomer(
-        SubscriptionCustomerId $customerId,
-        SubscriptionName $subscriptionName,
+    public function findForBillable(
+        SubscriptionBillable $billable,
+        SubscriptionName     $subscriptionName,
     ): ?Subscription;
-    public function findAllForCustomer(SubscriptionCustomerId $customerId): array;
+    public function findAllForBillable(SubscriptionBillable $billable): array;
 }

@@ -45,7 +45,8 @@ $billing = new BillingManager($products, $subscriptions, $providerRegistry);
 
 $result = $billing->createSubscription(
     name: 'default',
-    customerId: 'cust_123',
+    billableId: '123',
+    billableType: 'user',
     priceId: '01HZX3J8Y8B7MDQW9RGS0F7C39', // price ULID as string
     provider: 'stripe',
 );
@@ -140,7 +141,7 @@ Located under `AlturaCode\Billing\Core\Subscriptions`:
 - `Subscription` — the central aggregate describing a customer’s subscription
 - `SubscriptionId` — identifier for a subscription
 - `SubscriptionName` — logical name (for example, `default`, `primary`, `main`)
-- `SubscriptionCustomerId` — identifier of your customer in your own system
+- `SubscriptionBillable` — polymorphic-style identifier of your customer in your own system
 - `SubscriptionItem` / `SubscriptionItemId` — line items inside a subscription (base plan, add-ons)
 - `SubscriptionStatus` — status (for example, Trialing, Active, Paused, Canceled, Incomplete)
 - `SubscriptionProvider` — which billing provider this subscription belongs to (for example, `stripe`)
@@ -212,7 +213,7 @@ final class DatabaseProductRepository implements ProductRepository
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionRepository;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionCustomerId;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionBillable;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;
 
 final class DatabaseSubscriptionRepository implements SubscriptionRepository
@@ -222,7 +223,7 @@ final class DatabaseSubscriptionRepository implements SubscriptionRepository
         // Query by $id->value() and hydrate Subscription
     }
 
-    public function findForCustomer(SubscriptionCustomerId $customerId, SubscriptionName $name): ?Subscription
+    public function findForBillable(SubscriptionBillable $billable, SubscriptionName $name): ?Subscription
     {
         // Query by customer and name
     }
@@ -267,7 +268,7 @@ $manager = new BillingManager($products, $subscriptions, $providerRegistry);
 
 $result = $manager->createSubscription(
     name: 'default',
-    customerId: 'cust_123',          // your internal customer identifier
+    billableId: 'cust_123',          // your internal customer identifier
     priceId: '01HZX3J8Y8B7MDQW9RGS0F7C39', // the primary price ULID as a string
     provider: 'stripe',              // must exist in BillingProviderRegistry
     quantity: 1,
