@@ -143,7 +143,7 @@ Located under `AlturaCode\Billing\Core\Subscriptions`:
 - `SubscriptionName` — logical name (for example, `default`, `primary`, `main`)
 - `SubscriptionBillable` — polymorphic-style identifier of your customer in your own system
 - `SubscriptionItem` / `SubscriptionItemId` — line items inside a subscription (base plan, add-ons)
-- `SubscriptionStatus` — status (for example, Trialing, Active, Paused, Canceled, Incomplete)
+- `SubscriptionStatus` — status (for example, Active, Paused, Canceled, Incomplete)
 - `SubscriptionProvider` — which billing provider this subscription belongs to (for example, `stripe`)
 - `SubscriptionRepository` — abstraction that you implement to persist subscriptions
 
