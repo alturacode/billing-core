@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlturaCode\Billing\Core\Products;
 
 use AlturaCode\Billing\Core\Money;
+use InvalidArgumentException;
 
 final readonly class ProductPrice
 {
@@ -16,10 +17,14 @@ final readonly class ProductPrice
     {
     }
 
-    public static function hydrate(array $data): self
+    public static function hydrate(mixed $data): self
     {
+        if (!is_array($data)) {
+            throw new InvalidArgumentException('ProductPrice::hydrate expects an array.');
+        }
+
         return new self(
-            ProductPriceId::fromString($data['id']),
+            ProductPriceId::hydrate($data['id']),
             Money::hydrate($data['price']),
             ProductPriceInterval::hydrate($data['interval'])
         );

@@ -100,7 +100,7 @@ final readonly class BillingManager
             id: SubscriptionId::generate(),
             name: SubscriptionName::fromString($name),
             customerId: SubscriptionCustomerId::fromString($customerId),
-            provider: new SubscriptionProvider($provider),
+            provider: SubscriptionProvider::fromString($provider),
             trialEndsAt: $trialEndsAt
         )->withItems(...array_map(fn($addon) => SubscriptionItem::create(
                 id: SubscriptionItemId::generate(),            

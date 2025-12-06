@@ -11,8 +11,8 @@ final readonly class Currency implements Stringable
 {
     private function __construct(private string $code)
     {
-        if (!preg_match('/^[A-Z]{3}$/', $this->code)) {
-            throw new InvalidArgumentException('Currency code should be 3 uppercase letters');
+        if (!preg_match('/^[a-z]{3}$/', $this->code)) {
+            throw new InvalidArgumentException('Currency code should be 3 lowercase letters');
         }
     }
 

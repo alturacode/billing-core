@@ -23,6 +23,11 @@ final readonly class FeatureKey implements Stringable
         return new self($value);
     }
 
+    public static function hydrate(mixed $value): FeatureKey
+    {
+        return FeatureKey::fromString((string) $value);
+    }
+
     public function value(): string
     {
         return $this->value;

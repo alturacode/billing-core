@@ -27,9 +27,9 @@ final readonly class Product
     public static function hydrate(array $data): self
     {
         return new self(
-            ProductId::fromString($data['id']),
+            ProductId::hydrate($data['id']),
             ProductKind::from($data['kind']),
-            ProductSlug::fromString($data['slug']),
+            ProductSlug::hydrate($data['slug']),
             $data['name'],
             $data['description'],
             array_map(fn($price) => ProductPrice::hydrate($price), $data['prices']),

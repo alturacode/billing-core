@@ -9,7 +9,7 @@ use Stringable;
 
 final readonly class SubscriptionProvider implements Stringable
 {
-    public function __construct(private string $value)
+    private function __construct(private string $value)
     {
         if (empty($this->value)) {
             throw new InvalidArgumentException('Subscription provider cannot be empty');
@@ -18,6 +18,16 @@ final readonly class SubscriptionProvider implements Stringable
         if (preg_match('/[^a-zA-Z0-9_]/', $this->value)) {
             throw new InvalidArgumentException('Subscription provider should only contain lowercase letters, numbers and underscores');
         }
+    }
+
+    public static function hydrate(mixed $value): self
+    {
+        return new self((string) $value);
+    }
+
+    public static function fromString(string $value): SubscriptionProvider
+    {
+        return new self($value);
     }
 
     public function value(): string

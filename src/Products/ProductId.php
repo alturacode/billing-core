@@ -23,6 +23,11 @@ final readonly class ProductId implements Stringable
         return new ProductId(Ulid::fromString($value));
     }
 
+    public static function hydrate(mixed $value): ProductId
+    {
+        return ProductId::fromString((string) $value);
+    }
+
     public function value(): string
     {
         return $this->value->toString();

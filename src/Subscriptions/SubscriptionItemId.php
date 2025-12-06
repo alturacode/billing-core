@@ -18,6 +18,11 @@ final readonly class SubscriptionItemId implements Stringable
         return new self(new Ulid());
     }
 
+    public static function hydrate(mixed $value): self
+    {
+        return SubscriptionItemId::fromString((string) $value);
+    }
+
     public static function fromString(string $value): self
     {
         return new self(Ulid::fromString($value));

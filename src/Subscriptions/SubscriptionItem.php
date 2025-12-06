@@ -28,6 +28,22 @@ final readonly class SubscriptionItem
         $this->assertValidPeriod();
     }
 
+    public static function hydrate(array $data): self
+    {
+        return new self(
+            id: SubscriptionItemId::fromString($data['id']),
+            priceId: ProductPriceId::fromString($data['price_id']),
+            quantity: $data['quantity'],
+            price: Money::hydrate($data['price']),
+            currentPeriodStartsAt: isset($data['current_period_starts_at'])
+                ? DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $data['current_period_starts_at'])
+                : null,
+            currentPeriodEndsAt: isset($data['current_period_ends_at'])
+                ? DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $data['current_period_ends_at'])
+                : null,
+        );
+    }
+
     public static function create(SubscriptionItemId $id, ProductPriceId $priceId, int $quantity, Money $price): self
     {
         return new self($id, $priceId, $quantity, $price);

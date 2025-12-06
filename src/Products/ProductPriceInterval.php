@@ -28,8 +28,12 @@ final readonly class ProductPriceInterval
         }
     }
 
-    public static function hydrate(array $data): self
+    public static function hydrate(mixed $data): self
     {
+        if (!is_array($data)) {
+            throw new InvalidArgumentException('ProductPriceInterval::hydrate expects an array.');
+        }
+
         return new self($data['type'], $data['count']);
     }
 

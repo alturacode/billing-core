@@ -36,10 +36,10 @@ final readonly class Subscription
         private ?DateTimeImmutable     $canceledAt = null,
     )
     {
-        $this->assertAtLeastOneItemWhenActive();
-        $this->assertPrimaryItemRequired();
+        $this->assertAtLeastOneItemWhenNotIncomplete();
+        $this->assertAllItemsHavePeriodDatesWhenNotIncomplete();
+        $this->assertPrimaryItemRequiredWhenNotIncomplete();
         $this->assertAllItemsHaveSameCurrency();
-        $this->assertAllItemsHavePeriodDatesWhenActive();
         $this->assertNotDuplicateItems();
         $this->assertCanceledMatchesStatus();
     }
@@ -163,6 +163,21 @@ final readonly class Subscription
         return $this->status === SubscriptionStatus::Active;
     }
 
+    public function isCanceled(): bool
+    {
+        return $this->status === SubscriptionStatus::Canceled;
+    }
+
+    public function isPaused(): bool
+    {
+        return $this->status === SubscriptionStatus::Paused;
+    }
+
+    public function isIncomplete(): bool
+    {
+        return $this->status === SubscriptionStatus::Incomplete;
+    }
+
     public function hasItem(SubscriptionItemId $itemId): bool
     {
         return array_any($this->items, fn(SubscriptionItem $item) => $item->id()->equals($itemId));
@@ -252,25 +267,17 @@ final readonly class Subscription
         return $this->copy(items: array_merge($this->items, [$item]))->changePrimaryItem($item->id());
     }
 
-    private function assertAtLeastOneItemWhenActive(): void
+    private function assertAtLeastOneItemWhenNotIncomplete(): void
     {
-        if ($this->isActive() && empty($this->items)) {
-            throw new DomainException('Subscription must have at least one item.');
+        if (!$this->isIncomplete() && empty($this->items)) {
+            throw new DomainException('Subscription must have at least one item when status is not incomplete.');
         }
     }
 
-    private function assertPrimaryItemRequired(): void
+    private function assertPrimaryItemRequiredWhenNotIncomplete(): void
     {
-        $primaryFound = false;
-        foreach ($this->items as $item) {
-            if ($item->id()->equals($this->primaryItemId)) {
-                $primaryFound = true;
-                break;
-            }
-        }
-
-        if (!$primaryFound) {
-            throw new DomainException('Primary item must be one of the subscription items.');
+        if (!$this->isIncomplete() && $this->primaryItemId === null) {
+            throw new DomainException('Subscription must have a primary item when status is not incomplete.');
         }
     }
 
@@ -283,15 +290,15 @@ final readonly class Subscription
         }
     }
 
-    private function assertAllItemsHavePeriodDatesWhenActive(): void
+    private function assertAllItemsHavePeriodDatesWhenNotIncomplete(): void
     {
-        if ($this->status !== SubscriptionStatus::Active) {
+        if ($this->isIncomplete()) {
             return;
         }
 
         foreach ($this->items as $item) {
             if ($item->currentPeriodStartsAt() === null || $item->currentPeriodEndsAt() === null) {
-                throw new DomainException('All items must have a current period start date when subscription is active.');
+                throw new DomainException('All items must have a current period start date when subscription status is not incomplete.');
             }
         }
     }

@@ -20,6 +20,11 @@ final readonly class SubscriptionCustomerId implements Stringable
         }
     }
 
+    public static function hydrate(mixed $value): self
+    {
+        return new self($value);
+    }
+
     public static function fromString(string $value): SubscriptionCustomerId
     {
         return new self($value);
