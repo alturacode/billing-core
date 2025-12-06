@@ -155,7 +155,6 @@ Located under `AlturaCode\Billing\Core\Provider`:
 
 - `BillingProvider` — interface that concrete providers implement
 - `BillingProviderRegistry` — registry mapping provider names (for example, `stripe`) to `BillingProvider` instances
-- `SubscriptionDraft` / `SubscriptionDraftItem` — value objects passed to providers at creation time
 - `BillingProviderResult`, `BillingProviderResultClientAction`, `BillingProviderResultClientActionType` — describe the outcome of provider operations
 
 The **core** never directly calls Stripe or PayPal itself. Instead, it calls a `BillingProvider` implementation supplied by a provider package (for example, `billing-stripe`).
