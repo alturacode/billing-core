@@ -44,6 +44,23 @@ final readonly class Subscription
         $this->assertCanceledMatchesStatus();
     }
 
+    public static function hydrate(array $data): self
+    {
+        return new self(
+            id: SubscriptionId::hydrate($data['id']),
+            customerId: SubscriptionCustomerId::hydrate($data['customer_id']),
+            provider: SubscriptionProvider::hydrate($data['provider']),
+            name: SubscriptionName::hydrate($data['name']),
+            status: SubscriptionStatus::from($data['status']),
+            items: array_map(fn(array $item) => SubscriptionItem::hydrate($item), $data['items']),
+            primaryItemId: $data['primary_item_id'] ? SubscriptionItemId::hydrate($data['primary_item_id']) : null,
+            createdAt: DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $data['created_at']),
+            cancelAtPeriodEnd: $data['cancel_at_period_end'],
+            trialEndsAt: $data['trial_ends_at'] ? DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $data['trial_ends_at']) : null,
+            canceledAt: $data['canceled_at'] ? DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $data['canceled_at']) : null,
+        );
+    }
+
     public static function create(
         SubscriptionId         $id,
         SubscriptionName       $name,
