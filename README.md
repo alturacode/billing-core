@@ -267,9 +267,10 @@ $manager = new BillingManager($products, $subscriptions, $providerRegistry);
 
 $result = $manager->createSubscription(
     name: 'default',
-    billableId: 'cust_123',          // your internal customer identifier
-    priceId: '01HZX3J8Y8B7MDQW9RGS0F7C39', // the primary price ULID as a string
-    provider: 'stripe',              // must exist in BillingProviderRegistry
+    billableId: '123',                      // your internal customer identifier
+    billableType: 'user',                   // your internal customer type 
+    priceId: '01HZX3J8Y8B7MDQW9RGS0F7C39',  // the primary price ULID as a string
+    provider: 'stripe',                     // must exist in BillingProviderRegistry
     quantity: 1,
     trialEndsAt: null,
     addons: [
