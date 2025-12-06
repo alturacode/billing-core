@@ -4,37 +4,38 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Features;
 
-final readonly class FeatureUnit
+use Stringable;
+
+final readonly class FeatureUnit implements Stringable
 {
     private function __construct(
-        private string $singular,
-        private string $plural
+        private string $value
     )
     {
     }
 
-    public static function hydrate(array $data): self
+    public static function hydrate(mixed $data): self
     {
-        return new self($data['singular'], $data['plural']);
+        return new self($data);
     }
 
-    public static function create(string $singular, string $plural): self
+    public static function create(string $value): self
     {
-        return new self($singular, $plural);
+        return new self($value);
     }
 
     public static function generic(): self
     {
-        return self::create('Unit', 'Units');
+        return self::create('unit');
     }
 
-    public function singular(): string
+    public function value(): string
     {
-        return $this->singular;
+        return $this->value;
     }
 
-    public function plural(): string
+    public function __toString(): string
     {
-        return $this->plural;
+        return $this->value;
     }
 }
