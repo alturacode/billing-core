@@ -301,7 +301,15 @@ final readonly class Subscription
 
     private function assertAllItemsHaveSameCurrency(): void
     {
-        $currencies = array_map(fn(SubscriptionItem $item) => $item->price()->currency()->code(), $this->items);
+        if (count($this->items) === 0) {
+            return;
+        }
+
+        $currencies = array_map(
+            fn(SubscriptionItem $item) => $item->price()->currency()->code(),
+            $this->items
+        );
+
         if (count(array_unique($currencies)) !== 1) {
             throw new DomainException('All items must have the same currency.');
         }
@@ -355,9 +363,9 @@ final readonly class Subscription
             items: $items ?? $this->items,
             primaryItemId: $primaryItemId ?? $this->primaryItemId,
             createdAt: $createdAt ?? $this->createdAt,
-            cancelAtPeriodEnd: $cancelAtPeriodEnd ?? $this->cancelAtPeriodEnd,
-            trialEndsAt: $trialEndsAt ?? $this->trialEndsAt,
-            canceledAt: $canceledAt ?? $this->canceledAt,
+            cancelAtPeriodEnd: $cancelAtPeriodEnd !== null ? $cancelAtPeriodEnd : $this->cancelAtPeriodEnd,
+            trialEndsAt: $trialEndsAt !== null ? $trialEndsAt : $this->trialEndsAt,
+            canceledAt: $canceledAt !== null ? $canceledAt : $this->canceledAt,
         );
     }
 
