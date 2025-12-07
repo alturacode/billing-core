@@ -4,22 +4,14 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core;
 
-use AlturaCode\Billing\Core\Products\Product;
-use AlturaCode\Billing\Core\Products\ProductId;
-use AlturaCode\Billing\Core\Products\ProductKind;
 use AlturaCode\Billing\Core\Products\ProductPriceId;
 use AlturaCode\Billing\Core\Products\ProductRepository;
 use AlturaCode\Billing\Core\Provider\BillingProviderRegistry;
 use AlturaCode\Billing\Core\Provider\BillingProviderResult;
-use AlturaCode\Billing\Core\Subscriptions\Subscription;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionBillable;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionItem;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionProvider;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionRepository;
-use DateTimeImmutable;
 use RuntimeException;
 
 final readonly class BillingManager
@@ -33,91 +25,28 @@ final readonly class BillingManager
     }
 
     /**
-     * @param string $name
-     * @param string $billableId
-     * @param string $billableType
-     * @param string $priceId
-     * @param string $provider
-     * @param int $quantity
-     * @param DateTimeImmutable|null $trialEndsAt
-     * @param array<array{priceId: string, quantity: int}> $addons
+     * @param SubscriptionDraft $draft
      * @param array $providerOptions
      * @return BillingProviderResult
      */
-    public function createSubscription(
-        string             $name,
-        string             $billableId,
-        string             $billableType,
-        string             $priceId,
-        string             $provider,
-        int                $quantity = 1,
-        ?DateTimeImmutable $trialEndsAt = null,
-        array              $addons = [],
-        array              $providerOptions = []
-    ): BillingProviderResult
+    public function createSubscription(SubscriptionDraft $draft, array $providerOptions = []): BillingProviderResult
     {
         $subscription = $this->subscriptions->findForBillable(
-            SubscriptionBillable::fromString($billableType, $billableId),
-            SubscriptionName::fromString($name),
+            SubscriptionBillable::fromString($draft->billableType, $draft->billableId),
+            SubscriptionName::fromString($draft->name),
         );
 
         if ($subscription && $subscription->isActive()) {
             throw new RuntimeException('Subscription already exists.');
         }
 
-        $products = $this->products->findMultipleByPriceIds([
-            ProductPriceId::fromString($priceId),
-            ...array_map(fn($addon) => ProductPriceId::fromString($addon['priceId']), $addons),
+        $productList = $this->products->findMultipleByPriceIds([
+            ProductPriceId::fromString($draft->priceId),
+            ...array_map(fn($addon) => ProductPriceId::fromString($addon['priceId']), $draft->addons),
         ]);
 
-        /** @var Product $primaryProduct */
-        $primaryProduct = array_find($products, fn(Product $product) => $product->id()->equals(
-            ProductId::fromString($priceId)
-        ));
-
-        if ($primaryProduct === null) {
-            throw new RuntimeException(sprintf('Product with price ID %s not found', $priceId));
-        }
-
-        if ($primaryProduct->kind() !== ProductKind::Plan) {
-            throw new RuntimeException('Primary product must be a plan.');
-        }
-
-        $primaryPrice = $primaryProduct->findPrice(ProductPriceId::fromString($priceId));
-
-        // Ensure all addons are defined in some product
-        foreach ($addons as $addon) {
-            $product = array_find($products, fn(Product $product) => $product->hasPrice(ProductPriceId::fromString($addon['priceId'])));
-            if ($product === null) {
-                throw new RuntimeException(sprintf('Product with price ID %s not found', $addon['priceId']));
-            }
-
-            // Ensure addon price currency is the same as primary price currency
-            if ($product->findPrice(ProductPriceId::fromString($addon['priceId']))->price()->currency()->equals($primaryPrice->price()->currency()) === false) {
-                throw new RuntimeException(sprintf('Addon price currency must match primary price currency. Addon price ID: %s', $addon['priceId']));
-            }
-        }
-
-        $subscription = Subscription::create(
-            id: SubscriptionId::generate(),
-            name: SubscriptionName::fromString($name),
-            billable: SubscriptionBillable::fromString($billableType, $billableId),
-            provider: SubscriptionProvider::fromString($provider),
-            trialEndsAt: $trialEndsAt
-        )->withItems(...array_map(fn($addon) => SubscriptionItem::create(
-                id: SubscriptionItemId::generate(),
-                priceId: ProductPriceId::fromString($addon['priceId']),
-                quantity: $addon['quantity'],
-                price: array_find($products, fn(Product $product) => $product->hasPrice(ProductPriceId::fromString($addon['priceId'])))?->findPrice(ProductPriceId::fromString($addon['priceId']))?->price(),
-            ), $addons)
-        )->withPrimaryItem(SubscriptionItem::create(
-            id: SubscriptionItemId::generate(),
-            priceId: ProductPriceId::fromString($priceId),
-            quantity: $quantity,
-            price: $primaryPrice->price(),
-        )); // status = Incomplete
-
-        $gateway = $this->provider->subscriptionProviderFor($provider);
+        $subscription = new SubscriptionFactory()->fromProductListAndDraft($productList, $draft);
+        $gateway = $this->provider->subscriptionProviderFor($draft->provider);
         $result = $gateway->create($subscription, $providerOptions);
         $this->subscriptions->save($result->subscription);
 
