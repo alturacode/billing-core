@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlturaCode\Billing\Core;
 
 use DateInterval;
+use DateMalformedStringException;
 use DateTimeImmutable;
 
 final class SubscriptionDraftBuilder
@@ -17,15 +18,6 @@ final class SubscriptionDraftBuilder
     private int $quantity = 1;
     private ?DateTimeImmutable $trialEndsAt = null;
     private array $addons = [];
-
-    private function __construct()
-    {
-    }
-
-    public static function create(): self
-    {
-        return new self();
-    }
 
     public function withName(string $name): self
     {
@@ -46,7 +38,7 @@ final class SubscriptionDraftBuilder
         return $this;
     }
 
-    public function withPlan(string $priceId, int $quantity = 1): self
+    public function withPlanId(string $priceId, int $quantity = 1): self
     {
         $this->priceId = $priceId;
         $this->quantity = $quantity;
@@ -59,13 +51,16 @@ final class SubscriptionDraftBuilder
         return $this;
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function withTrialDays(int $trialDays): self
     {
-        $this->trialEndsAt = new DateTimeImmutable()->add(new DateInterval("P{$trialDays}D"));
+        $this->trialEndsAt = new DateTimeImmutable()->modify('tomorrow')->setTime(0, 0)->add(new DateInterval("P{$trialDays}D"));
         return $this;
     }
 
-    public function withAddon(string $priceId, int $quantity): self
+    public function withAddon(string $priceId, int $quantity = 1): self
     {
         $this->addons[] = ['priceId' => $priceId, 'quantity' => $quantity];
         return $this;
@@ -73,6 +68,8 @@ final class SubscriptionDraftBuilder
 
     public function build(): SubscriptionDraft
     {
+        $this->validate();
+
         return new SubscriptionDraft(
             name: $this->name,
             billableId: $this->billableId,
@@ -83,5 +80,15 @@ final class SubscriptionDraftBuilder
             trialEndsAt: $this->trialEndsAt,
             addons: $this->addons
         );
+    }
+
+    private function validate(): void
+    {
+        $required = ['name', 'billableId', 'billableType', 'priceId', 'provider'];
+        foreach ($required as $property) {
+            if (empty($this->{$property})) {
+                throw UnableToCreateSubscriptionDraft::missingRequiredProperty($property);
+            }
+        }
     }
 }

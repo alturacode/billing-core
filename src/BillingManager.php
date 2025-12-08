@@ -12,7 +12,6 @@ use AlturaCode\Billing\Core\Subscriptions\SubscriptionBillable;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionRepository;
-use RuntimeException;
 
 final readonly class BillingManager
 {
