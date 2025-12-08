@@ -28,7 +28,8 @@
     }
   ],
   "suggest": {
-    "alturacode/billing-stripe": "Stripe Billing Adapter for Altura Code Billing Package."
+    "alturacode/billing-stripe": "Stripe Billing Adapter for Altura Code Billing Package.",
+    "alturacode/billing-laravel": "Laravel Billing Adapter for Altura Code Billing Package."
   },
   "minimum-stability": "stable",
   "require": {
