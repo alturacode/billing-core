@@ -33,6 +33,7 @@ composer require alturacode/billing-stripe # or another provider package
 ```php
 use AlturaCode\Billing\Core\BillingManager;
 use AlturaCode\Billing\Core\Provider\BillingProviderRegistry;
+use AlturaCode\Billing\Core\SubscriptionDraftBuilder;
 
 $providerRegistry = new BillingProviderRegistry([
     // 'stripe' => new StripeBillingProvider(...),
@@ -44,11 +45,14 @@ $products      = new DatabaseProductRepository(...);
 $billing = new BillingManager($products, $subscriptions, $providerRegistry);
 
 $result = $billing->createSubscription(
-    name: 'default',
-    billableId: '123',
-    billableType: 'user',
-    priceId: '01HZX3J8Y8B7MDQW9RGS0F7C39', // price ULID as string
-    provider: 'stripe',
+    new SubscriptionDraftBuilder()
+        ->withName('default')
+        ->withBillable('user', '123') 
+        ->withProvider('stripe')
+        ->withPlanId('plan_ulid')
+        ->withAddon('addon_ulid', 5)
+        ->withTrialDays(15)
+        ->build();
 );
 
 if ($result->isSuccessful()) {
@@ -266,20 +270,18 @@ use AlturaCode\Billing\Core\BillingManager;
 $manager = new BillingManager($products, $subscriptions, $providerRegistry);
 
 $result = $manager->createSubscription(
-    name: 'default',
-    billableId: '123',                      // your internal customer identifier
-    billableType: 'user',                   // your internal customer type 
-    priceId: '01HZX3J8Y8B7MDQW9RGS0F7C39',  // the primary price ULID as a string
-    provider: 'stripe',                     // must exist in BillingProviderRegistry
-    quantity: 1,
-    trialEndsAt: null,
-    addons: [
-        // Each addon refers to other product & price IDs
-        [
-            'priceId'   => '01HZX3J8Y8B7MDQW9RGS0F7C41',
-            'quantity'  => 5,
-        ],
-    ],
+    new \AlturaCode\Billing\Core\SubscriptionDraft(
+        name: 'default',                        // logical subscription name
+        provider: 'stripe',                     // must exist in BillingProviderRegistry
+        billableId: '123',                      // your internal customer identifier
+        billableType: 'user',                   // your internal customer type 
+        priceId: '01HZX3J8Y8B7MDQW9RGS0F7C39',  // the primary price ULID as a string
+        quantity: 1,
+        trialEndsAt: null,
+        addons: [
+            ['priceId'   => '01HZX3J8Y8B7MDQW9RGS0F7C41', 'quantity'  => 5],
+        ]
+    ),
     providerOptions: [
         // Arbitrary provider-specific options forwarded to the BillingProvider
         // For example, Stripe metadata or trial configuration
@@ -364,7 +366,7 @@ You should create an implementation of `ExternalIdMapper` which handles the savi
 
 This core package purposefully does **not** know about any framework. To make it feel “first-class” in your environment, use or build an adapter.
 
-### Laravel (Planned `billing-laravel`)
+### Laravel
 
 A Laravel adapter typically provides:
 
