@@ -33,7 +33,7 @@ it('builds a subscription with custom quantities and trial days', function () {
     /** @noinspection PhpUnhandledExceptionInspection */
     $draft = $builder
         ->withName('default')
-        ->withBillable('user', 'user_1')
+        ->withBillable('user', 123)
         ->withProvider('stripe')
         ->withPlanPriceId('price_123', 2)
         ->withAddon('addon_123', 2)

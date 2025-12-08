@@ -10,7 +10,7 @@ final class SubscriptionDraft
 {
     public function __construct(
         public string             $name,
-        public string             $billableId,
+        public mixed              $billableId,
         public string             $billableType,
         public string             $priceId,
         public string             $provider,
