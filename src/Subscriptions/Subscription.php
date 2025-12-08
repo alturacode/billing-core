@@ -273,7 +273,7 @@ final readonly class Subscription
 
     public function withPrimaryItem(SubscriptionItem $item): Subscription
     {
-        if ($item->id()->equals($this->primaryItemId)) {
+        if ($this->primaryItemId && $item->id()->equals($this->primaryItemId)) {
             return $this;
         }
 

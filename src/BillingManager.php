@@ -37,7 +37,7 @@ final readonly class BillingManager
         );
 
         if ($subscription && $subscription->isActive()) {
-            throw new RuntimeException('Subscription already exists.');
+            throw SubscriptionAlreadyExists::forLogicalName($draft->name);
         }
 
         $productList = $this->products->findMultipleByPriceIds([
@@ -62,7 +62,7 @@ final readonly class BillingManager
         $subscription = $this->subscriptions->find(SubscriptionId::fromString($subscriptionId));
 
         if ($subscription === null) {
-            throw new RuntimeException('Subscription not found');
+            throw new SubscriptionNotFoundException();
         }
 
         $gateway = $this->provider->subscriptionProviderFor($subscription->provider()->value());
@@ -80,7 +80,7 @@ final readonly class BillingManager
         $subscription = $this->subscriptions->find(SubscriptionId::fromString($subscriptionId));
 
         if ($subscription === null) {
-            throw new RuntimeException('Subscription not found');
+            throw new SubscriptionNotFoundException();
         }
 
         $gateway = $this->provider->subscriptionProviderFor($subscription->provider()->value());
@@ -98,7 +98,7 @@ final readonly class BillingManager
         $subscription = $this->subscriptions->find(SubscriptionId::fromString($subscriptionId));
 
         if ($subscription === null) {
-            throw new RuntimeException('Subscription not found');
+            throw new SubscriptionNotFoundException();
         }
 
         $gateway = $this->provider->subscriptionProviderFor($subscription->provider()->value());

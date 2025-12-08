@@ -99,7 +99,7 @@ final class SubscriptionFactory
      * @param SubscriptionDraft $draft
      * @return Product
      */
-    public function validatePlan(array $productList, ProductPriceId $productPriceId, SubscriptionDraft $draft): Product
+    private function validatePlan(array $productList, ProductPriceId $productPriceId, SubscriptionDraft $draft): Product
     {
         /** @var Product $primaryProduct */
         $primaryProduct = array_find($productList, fn(Product $product) => $product->hasPrice($productPriceId));
