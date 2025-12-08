@@ -49,7 +49,7 @@ $result = $billing->createSubscription(
         ->withName('default')
         ->withBillable('user', '123') 
         ->withProvider('stripe')
-        ->withPlanId('plan_ulid')
+        ->withPlanPriceId('plan_ulid')
         ->withAddon('addon_ulid', 5)
         ->withTrialDays(15)
         ->build();

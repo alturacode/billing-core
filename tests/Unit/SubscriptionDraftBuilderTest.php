@@ -11,7 +11,7 @@ it('builds a subscription draft', function () {
         ->withName('default')
         ->withBillable('user', 'user_1')
         ->withProvider('stripe')
-        ->withPlanId('price_123')
+        ->withPlanPriceId('price_123')
         ->withTrialEndsAt(new DateTimeImmutable('2021-01-01 00:00:00'))
         ->withAddon('addon_123')
         ->build();
@@ -35,7 +35,7 @@ it('builds a subscription with custom quantities and trial days', function () {
         ->withName('default')
         ->withBillable('user', 'user_1')
         ->withProvider('stripe')
-        ->withPlanId('price_123', 2)
+        ->withPlanPriceId('price_123', 2)
         ->withAddon('addon_123', 2)
         ->withTrialDays(3)
         ->build();
@@ -63,6 +63,6 @@ it('throws exception if any required property is missing', function () {
         ->toThrow(UnableToCreateSubscriptionDraft::class, "Missing required property 'billableId'")
         ->and(fn() => $builder->withName('test')->withBillable('user', 'user_1')->build())
         ->toThrow(UnableToCreateSubscriptionDraft::class, "Missing required property 'priceId'")
-        ->and(fn() => $builder->withName('test')->withBillable('user', 'user_1')->withPlanId('price_1')->build())
+        ->and(fn() => $builder->withName('test')->withBillable('user', 'user_1')->withPlanPriceId('price_1')->build())
         ->toThrow(UnableToCreateSubscriptionDraft::class, "Missing required property 'provider'");
 });

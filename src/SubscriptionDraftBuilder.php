@@ -38,7 +38,7 @@ final class SubscriptionDraftBuilder
         return $this;
     }
 
-    public function withPlanId(string $priceId, int $quantity = 1): self
+    public function withPlanPriceId(string $priceId, int $quantity = 1): self
     {
         $this->priceId = $priceId;
         $this->quantity = $quantity;
