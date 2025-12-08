@@ -25,7 +25,7 @@ final class SubscriptionDraftBuilder
         return $this;
     }
 
-    public function withBillable(string $billableType, string $billableId): self
+    public function withBillable(string $billableType, mixed $billableId): self
     {
         $this->billableType = $billableType;
         $this->billableId = $billableId;
