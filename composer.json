@@ -34,7 +34,7 @@
   "minimum-stability": "stable",
   "require": {
     "php": ">=8.4",
-    "symfony/uid": "8.1.x-dev"
+    "symfony/uid": "^7.4"
   },
   "require-dev": {
     "pestphp/pest": "^4.1"
