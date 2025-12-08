@@ -11,7 +11,7 @@ use DateTimeImmutable;
 final class SubscriptionDraftBuilder
 {
     private string $name;
-    private string $billableId;
+    private mixed $billableId;
     private string $billableType;
     private string $priceId;
     private string $provider;
