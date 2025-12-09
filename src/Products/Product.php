@@ -84,7 +84,7 @@ final readonly class Product
 
     public function hasPrice(ProductPriceId $productPriceId): bool
     {
-        return array_find($this->prices, fn($price) => $price->id()->equals($productPriceId)) !== false;
+        return array_find($this->prices, fn($price) => $price->id()->equals($productPriceId)) !== null;
     }
 
     public function hasAnyPrice(ProductPriceId ...$productPriceIds): bool
