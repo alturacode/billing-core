@@ -37,7 +37,7 @@ final readonly class Subscription
     )
     {
         $this->assertAtLeastOneItemWhenNotIncomplete();
-        $this->assertAllItemsHavePeriodDatesWhenNotIncomplete();
+        $this->assertAllItemsHaveCorrectPeriodDates();
         $this->assertPrimaryItemRequiredWhenNotIncomplete();
         $this->assertAllItemsHaveSameCurrency();
         $this->assertNotDuplicateItems();
@@ -298,7 +298,6 @@ final readonly class Subscription
         }
     }
 
-
     private function assertAllItemsHaveSameCurrency(): void
     {
         if (count($this->items) === 0) {
@@ -315,15 +314,13 @@ final readonly class Subscription
         }
     }
 
-    private function assertAllItemsHavePeriodDatesWhenNotIncomplete(): void
+    private function assertAllItemsHaveCorrectPeriodDates(): void
     {
-        if ($this->isIncomplete()) {
-            return;
-        }
-
         foreach ($this->items as $item) {
-            if ($item->currentPeriodStartsAt() === null || $item->currentPeriodEndsAt() === null) {
-                throw new DomainException('All items must have a current period start date when subscription status is not incomplete.');
+            if (($item->currentPeriodStartsAt() === null) !== ($item->currentPeriodEndsAt() === null)) {
+                throw new DomainException(
+                    'Subscription items must have both period dates set or both null.'
+                );
             }
         }
     }
