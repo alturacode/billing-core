@@ -6,7 +6,7 @@ namespace AlturaCode\Billing\Core;
 
 use RuntimeException;
 
-final class UnableToCreateSubscriptionDraft extends RuntimeException
+final class UnableToCreateSubscriptionDraftException extends RuntimeException
 {
     public static function missingRequiredProperty(string $property): self
     {

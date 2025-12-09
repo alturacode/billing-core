@@ -36,7 +36,7 @@ final readonly class BillingManager
         );
 
         if ($subscription && $subscription->isActive()) {
-            throw SubscriptionAlreadyExists::forLogicalName($draft->name);
+            throw SubscriptionAlreadyExistsException::forLogicalName($draft->name);
         }
 
         $productList = $this->products->findMultipleByPriceIds([

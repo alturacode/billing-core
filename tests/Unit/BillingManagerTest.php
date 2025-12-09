@@ -6,7 +6,7 @@ use AlturaCode\Billing\Core\Products\ProductRepository;
 use AlturaCode\Billing\Core\Provider\BillingProvider;
 use AlturaCode\Billing\Core\Provider\BillingProviderRegistry;
 use AlturaCode\Billing\Core\Provider\BillingProviderResult;
-use AlturaCode\Billing\Core\SubscriptionAlreadyExists;
+use AlturaCode\Billing\Core\SubscriptionAlreadyExistsException;
 use AlturaCode\Billing\Core\SubscriptionDraft;
 use AlturaCode\Billing\Core\SubscriptionNotFoundException;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
@@ -126,7 +126,7 @@ it('throws exception if subscription already exists and is active when creating'
         ->willReturn($existingSubscription);
 
     $this->manager->createSubscription($draft);
-})->throws(SubscriptionAlreadyExists::class, 'Subscription for logical name "default" already exists');
+})->throws(SubscriptionAlreadyExistsException::class, 'Subscription for logical name "default" already exists');
 
 it('cancels an existing subscription', function () {
     $subId = (string)new Ulid();

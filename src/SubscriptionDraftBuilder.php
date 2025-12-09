@@ -87,7 +87,7 @@ final class SubscriptionDraftBuilder
         $required = ['name', 'billableId', 'billableType', 'priceId', 'provider'];
         foreach ($required as $property) {
             if (empty($this->{$property})) {
-                throw UnableToCreateSubscriptionDraft::missingRequiredProperty($property);
+                throw UnableToCreateSubscriptionDraftException::missingRequiredProperty($property);
             }
         }
     }

@@ -2,7 +2,7 @@
 
 use AlturaCode\Billing\Core\SubscriptionDraft;
 use AlturaCode\Billing\Core\SubscriptionDraftBuilder;
-use AlturaCode\Billing\Core\UnableToCreateSubscriptionDraft;
+use AlturaCode\Billing\Core\UnableToCreateSubscriptionDraftException;
 
 it('builds a subscription draft', function () {
     $builder = new SubscriptionDraftBuilder();
@@ -56,13 +56,13 @@ it('throws exception if any required property is missing', function () {
     $builder = new SubscriptionDraftBuilder();
 
     expect(fn() => $builder->build())
-        ->toThrow(UnableToCreateSubscriptionDraft::class, "Missing required property 'name'")
+        ->toThrow(UnableToCreateSubscriptionDraftException::class, "Missing required property 'name'")
         ->and(fn() => $builder->withName('test')->build())
-        ->toThrow(UnableToCreateSubscriptionDraft::class, "Missing required property 'billableId'")
+        ->toThrow(UnableToCreateSubscriptionDraftException::class, "Missing required property 'billableId'")
         ->and(fn() => $builder->withName('test')->withBillable('user', '')->build())
-        ->toThrow(UnableToCreateSubscriptionDraft::class, "Missing required property 'billableId'")
+        ->toThrow(UnableToCreateSubscriptionDraftException::class, "Missing required property 'billableId'")
         ->and(fn() => $builder->withName('test')->withBillable('user', 'user_1')->build())
-        ->toThrow(UnableToCreateSubscriptionDraft::class, "Missing required property 'priceId'")
+        ->toThrow(UnableToCreateSubscriptionDraftException::class, "Missing required property 'priceId'")
         ->and(fn() => $builder->withName('test')->withBillable('user', 'user_1')->withPlanPriceId('price_1')->build())
-        ->toThrow(UnableToCreateSubscriptionDraft::class, "Missing required property 'provider'");
+        ->toThrow(UnableToCreateSubscriptionDraftException::class, "Missing required property 'provider'");
 });

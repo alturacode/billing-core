@@ -6,7 +6,7 @@ namespace AlturaCode\Billing\Core;
 
 use RuntimeException;
 
-final class SubscriptionAlreadyExists extends RuntimeException
+final class SubscriptionAlreadyExistsException extends RuntimeException
 {
     public static function forLogicalName(string $logicalName): self
     {
