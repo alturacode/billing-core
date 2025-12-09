@@ -31,9 +31,9 @@ final readonly class ProductFeatureValue
         return $this->value;
     }
 
-    public function isNumeric(): bool
+    public function isLimitThreshold(): bool
     {
-        return is_numeric($this->value);
+        return is_numeric($this->value) || $this->value === 'unlimited';
     }
 
     public function isBoolean(): bool

@@ -82,8 +82,8 @@ final readonly class ProductFeature
             throw new LogicException('Flag features can only have boolean values.');
         }
 
-        if ($this->kind === FeatureKind::Limit && $this->value->isNumeric() === false) {
-            throw new LogicException('Limit features can only have numeric values.');
+        if ($this->kind === FeatureKind::Limit && $this->value->isLimitThreshold() === false) {
+            throw new LogicException('Limit features can only have threshold values.');
         }
     }
 }
