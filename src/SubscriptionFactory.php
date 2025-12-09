@@ -38,6 +38,7 @@ final class SubscriptionFactory
             priceId: $productPriceId,
             quantity: $draft->quantity,
             price: $primaryProductPrice->price(),
+            interval: $primaryProductPrice->interval()
         ));
     }
 
@@ -88,7 +89,8 @@ final class SubscriptionFactory
                 id: SubscriptionItemId::generate(),
                 priceId: $addonPriceId,
                 quantity: $addon['quantity'],
-                price: $product->findPrice($addonPriceId)->price()
+                price: $product->findPrice($addonPriceId)->price(),
+                interval: $product->findPrice($addonPriceId)->interval()
             );
         }, $draft->addons));
     }

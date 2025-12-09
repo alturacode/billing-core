@@ -42,6 +42,7 @@ function hydrateSubscription(string $status = 'active'): Subscription
                 'price_id' => (string)new Ulid(),
                 'quantity' => 1,
                 'price' => ['amount' => 1000, 'currency' => 'usd'],
+                'interval' => ['type' => 'month', 'count' => 1],
                 'current_period_starts_at' => '2023-01-01 00:00:00',
                 'current_period_ends_at' => '2023-02-01 00:00:00',
             ]

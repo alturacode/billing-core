@@ -37,6 +37,16 @@ final readonly class ProductPriceInterval
         return new self($data['type'], $data['count']);
     }
 
+    public static function monthly(): self
+    {
+        return new self('month', 1);
+    }
+
+    public static function yearly(): self
+    {
+        return new self('year', 1);
+    }
+
     public function type(): string
     {
         return $this->type;

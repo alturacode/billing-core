@@ -1,6 +1,7 @@
 <?php
 use AlturaCode\Billing\Core\Money;
 use AlturaCode\Billing\Core\Products\ProductPriceId;
+use AlturaCode\Billing\Core\Products\ProductPriceInterval;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionBillable;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
@@ -33,6 +34,7 @@ function makeItem(string $currency = 'usd', ?SubscriptionItemId $id = null, int 
         priceId: ProductPriceId::generate(),
         quantity: $quantity,
         price: makeMoney(1000, $currency),
+        interval: ProductPriceInterval::monthly()
     );
 }
 

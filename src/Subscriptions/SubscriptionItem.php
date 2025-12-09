@@ -6,6 +6,7 @@ namespace AlturaCode\Billing\Core\Subscriptions;
 
 use AlturaCode\Billing\Core\Money;
 use AlturaCode\Billing\Core\Products\ProductPriceId;
+use AlturaCode\Billing\Core\Products\ProductPriceInterval;
 use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;
@@ -13,12 +14,13 @@ use InvalidArgumentException;
 final readonly class SubscriptionItem
 {
     public function __construct(
-        private SubscriptionItemId $id,
-        private ProductPriceId     $priceId,
-        private int                $quantity,
-        private Money              $price,
-        private ?DateTimeImmutable $currentPeriodStartsAt = null,
-        private ?DateTimeImmutable $currentPeriodEndsAt = null,
+        private SubscriptionItemId   $id,
+        private ProductPriceId       $priceId,
+        private int                  $quantity,
+        private Money                $price,
+        private ProductPriceInterval $interval,
+        private ?DateTimeImmutable   $currentPeriodStartsAt = null,
+        private ?DateTimeImmutable   $currentPeriodEndsAt = null,
     )
     {
         if ($quantity < 1) {
@@ -35,6 +37,7 @@ final readonly class SubscriptionItem
             priceId: ProductPriceId::fromString($data['price_id']),
             quantity: $data['quantity'],
             price: Money::hydrate($data['price']),
+            interval: ProductPriceInterval::hydrate($data['interval']),
             currentPeriodStartsAt: isset($data['current_period_starts_at'])
                 ? DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $data['current_period_starts_at'])
                 : null,
@@ -44,9 +47,21 @@ final readonly class SubscriptionItem
         );
     }
 
-    public static function create(SubscriptionItemId $id, ProductPriceId $priceId, int $quantity, Money $price): self
+    public static function create(
+        SubscriptionItemId   $id,
+        ProductPriceId       $priceId,
+        int                  $quantity,
+        Money                $price,
+        ProductPriceInterval $interval
+    ): self
     {
-        return new self($id, $priceId, $quantity, $price);
+        return new self(
+            id: $id,
+            priceId: $priceId,
+            quantity: $quantity,
+            price: $price,
+            interval: $interval
+        );
     }
 
     public function id(): SubscriptionItemId
@@ -69,6 +84,11 @@ final readonly class SubscriptionItem
         return $this->price;
     }
 
+    public function interval(): ProductPriceInterval
+    {
+        return $this->interval;
+    }
+
     public function currentPeriodStartsAt(): ?DateTimeImmutable
     {
         return $this->currentPeriodStartsAt;
@@ -82,24 +102,26 @@ final readonly class SubscriptionItem
     public function withQuantity(int $quantity): self
     {
         return new self(
-            $this->id,
-            $this->priceId,
-            $quantity,
-            $this->price,
-            $this->currentPeriodStartsAt,
-            $this->currentPeriodEndsAt
+            id: $this->id,
+            priceId: $this->priceId,
+            quantity: $quantity,
+            price: $this->price,
+            interval: $this->interval,
+            currentPeriodStartsAt: $this->currentPeriodStartsAt,
+            currentPeriodEndsAt: $this->currentPeriodEndsAt
         );
     }
 
     public function withPeriodDates(DateTimeImmutable $currentPeriodStartsAt, DateTimeImmutable $currentPeriodEndsAt): self
     {
         return new self(
-            $this->id,
-            $this->priceId,
-            $this->quantity,
-            $this->price,
-            $currentPeriodStartsAt,
-            $currentPeriodEndsAt
+            id: $this->id,
+            priceId: $this->priceId,
+            quantity: $this->quantity,
+            price: $this->price,
+            interval: $this->interval,
+            currentPeriodStartsAt: $currentPeriodStartsAt,
+            currentPeriodEndsAt: $currentPeriodEndsAt
         );
     }
 
