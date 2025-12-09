@@ -88,8 +88,8 @@ it('enforces numeric/unlimited for limit kind', function () {
 it('evaluates within and over limit correctly', function () {
     $limit = FeatureValue::limit(10);
 
-    expect($limit->isWithinLimit(10))->toBeTrue()
-        ->and($limit->isWithinLimit(11))->toBeFalse()
+    expect($limit->staysWithinLimit(10))->toBeTrue()
+        ->and($limit->staysWithinLimit(11))->toBeFalse()
         ->and($limit->goesOverLimit(10))->toBeFalse()
         ->and($limit->goesOverLimit(11))->toBeTrue();
 });

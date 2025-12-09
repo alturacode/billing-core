@@ -101,7 +101,7 @@ final readonly class FeatureValue
         return $this->isValueLimitThreshold() && $value > $this->value;
     }
 
-    public function isWithinLimit($value): bool
+    public function staysWithinLimit($value): bool
     {
         return $this->isValueLimitThreshold() && $value <= $this->value;
     }
