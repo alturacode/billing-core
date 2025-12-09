@@ -4,35 +4,28 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Products;
 
-use AlturaCode\Billing\Core\Features\FeatureKey;
-use AlturaCode\Billing\Core\Features\FeatureKind;
-use AlturaCode\Billing\Core\Features\FeatureUnit;
-use LogicException;
+use AlturaCode\Billing\Core\Common\FeatureKey;
+use AlturaCode\Billing\Core\Common\FeatureValue;
 
 final readonly class ProductFeature
 {
     private function __construct(
-        private FeatureKey          $key,
-        private FeatureKind         $kind,
-        private ProductFeatureValue $value,
-        private ?string             $name = null,
-        private ?string             $description = null,
-        private ?FeatureUnit        $unit = null,
-        private ?int                $sortOrder = 0
+        private FeatureKey   $key,
+        private FeatureValue $value,
+        private ?string      $name = null,
+        private ?string      $description = null,
+        private ?int         $sortOrder = 0
     )
     {
-        $this->assertValid();
     }
 
     public static function hydrate(array $data): self
     {
         return new self(
             key: FeatureKey::hydrate($data['key']),
-            kind: FeatureKind::from($data['kind']),
-            value: ProductFeatureValue::hydrate($data['value']),
+            value: FeatureValue::hydrate($data['value']),
             name: $data['name'] ?? null,
             description: $data['description'] ?? null,
-            unit: isset($data['unit']) ? FeatureUnit::hydrate($data['unit']) : null,
             sortOrder: $data['sortOrder'] ?? 0
         );
     }
@@ -42,9 +35,9 @@ final readonly class ProductFeature
         return $this->key;
     }
 
-    public function kind(): FeatureKind
+    public function value(): FeatureValue
     {
-        return $this->kind;
+        return $this->value;
     }
 
     public function name(): ?string
@@ -57,33 +50,8 @@ final readonly class ProductFeature
         return $this->description;
     }
 
-    public function hasUnit(): bool
-    {
-        return $this->unit !== null;
-    }
-
-    public function unit(): FeatureUnit
-    {
-        if ($this->unit === null) {
-            throw new LogicException('Product feature does not have a unit.');
-        }
-
-        return $this->unit;
-    }
-
     public function sortOrder(): int
     {
         return $this->sortOrder;
-    }
-
-    private function assertValid(): void
-    {
-        if ($this->kind === FeatureKind::Flag && $this->value->isBoolean() === false) {
-            throw new LogicException('Flag features can only have boolean values.');
-        }
-
-        if ($this->kind === FeatureKind::Limit && $this->value->isLimitThreshold() === false) {
-            throw new LogicException('Limit features can only have threshold values.');
-        }
     }
 }

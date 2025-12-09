@@ -43,8 +43,7 @@ function makePriceArray(ProductPriceId $id, int $amount = 1000, string $currency
 function makeFeatureArray(string $key, string $kind, mixed $value, ?string $unit = null, ?int $sortOrder = null, ?string $name = null, ?string $description = null): array {
     return array_filter([
         'key' => $key,
-        'kind' => $kind,
-        'value' => $value,
+        'value' => ['kind' => $kind, 'value' => $value],
         'unit' => $unit,
         'sortOrder' => $sortOrder,
         'name' => $name,

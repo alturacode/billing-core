@@ -10,17 +10,7 @@ use DomainException;
 final readonly class Subscription
 {
     /**
-     * @param SubscriptionId $id
-     * @param SubscriptionBillable $billable
-     * @param SubscriptionProvider $provider
-     * @param SubscriptionName $name
-     * @param SubscriptionStatus $status
      * @param array<SubscriptionItem> $items
-     * @param SubscriptionItemId|null $primaryItemId
-     * @param DateTimeImmutable $createdAt
-     * @param bool $cancelAtPeriodEnd
-     * @param DateTimeImmutable|null $trialEndsAt
-     * @param DateTimeImmutable|null $canceledAt
      */
     private function __construct(
         private SubscriptionId       $id,
@@ -29,6 +19,7 @@ final readonly class Subscription
         private SubscriptionName     $name,
         private SubscriptionStatus   $status,
         private array                $items,
+        private array                $entitlements,
         private ?SubscriptionItemId  $primaryItemId,
         private DateTimeImmutable    $createdAt,
         private bool                 $cancelAtPeriodEnd = false,
@@ -37,7 +28,6 @@ final readonly class Subscription
     )
     {
         $this->assertAtLeastOneItemWhenNotIncomplete();
-        $this->assertAllItemsHaveCorrectPeriodDates();
         $this->assertPrimaryItemRequiredWhenNotIncomplete();
         $this->assertAllItemsHaveSameCurrency();
         $this->assertNotDuplicateItems();
@@ -53,6 +43,7 @@ final readonly class Subscription
             name: SubscriptionName::hydrate($data['name']),
             status: SubscriptionStatus::from($data['status']),
             items: array_map(fn(array $item) => SubscriptionItem::hydrate($item), $data['items']),
+            entitlements: array_map(fn(array $entitlement) => SubscriptionEntitlement::hydrate($entitlement), $data['entitlements'] ?? []),
             primaryItemId: $data['primary_item_id'] ? SubscriptionItemId::hydrate($data['primary_item_id']) : null,
             createdAt: DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $data['created_at']),
             cancelAtPeriodEnd: $data['cancel_at_period_end'],
@@ -76,6 +67,7 @@ final readonly class Subscription
             name: $name,
             status: SubscriptionStatus::Incomplete,
             items: [],
+            entitlements: [],
             primaryItemId: null,
             createdAt: new DateTimeImmutable(),
             trialEndsAt: $trialEndsAt
@@ -110,6 +102,11 @@ final readonly class Subscription
     public function items(): array
     {
         return $this->items;
+    }
+
+    public function entitlements(): array
+    {
+        return $this->entitlements;
     }
 
     public function cancelAtPeriodEnd(): bool
@@ -220,19 +217,11 @@ final readonly class Subscription
 
     public function activate(): Subscription
     {
-        if ($this->status === SubscriptionStatus::Active) {
-            return $this;
-        }
-
         return $this->copy(status: SubscriptionStatus::Active);
     }
 
     public function cancel(bool $atPeriodEnd = true): Subscription
     {
-        if ($this->status === SubscriptionStatus::Canceled) {
-            return $this;
-        }
-
         return $this->copy(
             status: $atPeriodEnd ? $this->status : SubscriptionStatus::Canceled,
             cancelAtPeriodEnd: $atPeriodEnd,
@@ -271,12 +260,13 @@ final readonly class Subscription
         return $this->copy(items: $items);
     }
 
+    public function withEntitlements(SubscriptionEntitlement ...$entitlements): Subscription
+    {
+        return $this->copy(entitlements: $entitlements);
+    }
+
     public function withPrimaryItem(SubscriptionItem $item): Subscription
     {
-        if ($this->primaryItemId && $item->id()->equals($this->primaryItemId)) {
-            return $this;
-        }
-
         if ($this->hasItem($item->id())) {
             return $this->changePrimaryItem($item->id());
         }
@@ -314,17 +304,6 @@ final readonly class Subscription
         }
     }
 
-    private function assertAllItemsHaveCorrectPeriodDates(): void
-    {
-        foreach ($this->items as $item) {
-            if (($item->currentPeriodStartsAt() === null) !== ($item->currentPeriodEndsAt() === null)) {
-                throw new DomainException(
-                    'Subscription items must have both period dates set or both null.'
-                );
-            }
-        }
-    }
-
     private function assertCanceledMatchesStatus(): void
     {
         if ($this->canceledAt !== null && $this->status !== SubscriptionStatus::Canceled) {
@@ -336,6 +315,14 @@ final readonly class Subscription
         }
     }
 
+    private function assertNotDuplicateItems(): void
+    {
+        $itemIds = array_map(fn(SubscriptionItem $item) => $item->id()->value(), $this->items);
+        if (count(array_unique($itemIds)) !== count($itemIds)) {
+            throw new DomainException(sprintf('Subscription items must have unique IDs. Duplicate ID found: %s', implode(', ', array_keys(array_filter(array_count_values($itemIds), fn($count) => $count > 1)))));
+        }
+    }
+
     /** @noinspection PhpSameParameterValueInspection */
     private function copy(
         ?SubscriptionId       $id = null,
@@ -344,6 +331,7 @@ final readonly class Subscription
         ?SubscriptionName     $name = null,
         ?SubscriptionStatus   $status = null,
         ?array                $items = null,
+        ?array                $entitlements = null,
         ?SubscriptionItemId   $primaryItemId = null,
         ?DateTimeImmutable    $createdAt = null,
         ?bool                 $cancelAtPeriodEnd = null,
@@ -358,19 +346,12 @@ final readonly class Subscription
             name: $name ?? $this->name,
             status: $status ?? $this->status,
             items: $items ?? $this->items,
+            entitlements: $entitlements ?? $this->entitlements,
             primaryItemId: $primaryItemId ?? $this->primaryItemId,
             createdAt: $createdAt ?? $this->createdAt,
             cancelAtPeriodEnd: $cancelAtPeriodEnd !== null ? $cancelAtPeriodEnd : $this->cancelAtPeriodEnd,
             trialEndsAt: $trialEndsAt !== null ? $trialEndsAt : $this->trialEndsAt,
             canceledAt: $canceledAt !== null ? $canceledAt : $this->canceledAt,
         );
-    }
-
-    private function assertNotDuplicateItems(): void
-    {
-        $itemIds = array_map(fn(SubscriptionItem $item) => $item->id()->value(), $this->items);
-        if (count(array_unique($itemIds)) !== count($itemIds)) {
-            throw new DomainException(sprintf('Subscription items must have unique IDs. Duplicate ID found: %s', implode(', ', array_keys(array_filter(array_count_values($itemIds), fn($count) => $count > 1)))));
-        }
     }
 }

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Features;
 
+use AlturaCode\Billing\Core\Common\FeatureKey;
+use AlturaCode\Billing\Core\Common\FeatureKind;
+use AlturaCode\Billing\Core\Common\FeatureUnit;
 use LogicException;
 
 final readonly class Feature

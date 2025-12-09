@@ -1,6 +1,6 @@
 <?php
 
-use AlturaCode\Billing\Core\Money;
+use AlturaCode\Billing\Core\Common\Money;
 use AlturaCode\Billing\Core\Products\ProductPriceId;
 use AlturaCode\Billing\Core\Products\ProductPriceInterval;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItem;

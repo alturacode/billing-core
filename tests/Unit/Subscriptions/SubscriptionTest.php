@@ -1,9 +1,14 @@
 <?php
-use AlturaCode\Billing\Core\Money;
+
+use AlturaCode\Billing\Core\Common\FeatureKey;
+use AlturaCode\Billing\Core\Common\FeatureValue;
+use AlturaCode\Billing\Core\Common\Money;
 use AlturaCode\Billing\Core\Products\ProductPriceId;
 use AlturaCode\Billing\Core\Products\ProductPriceInterval;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionBillable;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionEntitlement;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionEntitlementId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItem;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemId;
@@ -44,6 +49,7 @@ it('creates an incomplete subscription without items', function () {
     expect($subscription->status())->toBe(SubscriptionStatus::Incomplete)
         ->and($subscription->isIncomplete())->toBeTrue()
         ->and($subscription->items())->toBeArray()->toHaveCount(0)
+        ->and($subscription->entitlements())->toBeArray()->toHaveCount(0)
         ->and($subscription->cancelAtPeriodEnd())->toBeFalse()
         ->and($subscription->trialEndsAt())->toBeNull()
         ->and($subscription->canceledAt())->toBeNull();
@@ -76,6 +82,17 @@ it('changes the primary item when provided id exists', function () {
     expect($subscription->primaryItem())->toBe($two);
 });
 
+it('adds entitlements', function () {
+    $subscription = makeSubscription();
+    $entitlement = SubscriptionEntitlement::create(
+        id: SubscriptionEntitlementId::generate(),
+        key: FeatureKey::fromString('feature'),
+        value: FeatureValue::flagOn(),
+    );
+    $subscription = $subscription->withEntitlements($entitlement);
+    expect($subscription->entitlements())->toHaveCount(1);
+});
+
 it('throws when setting primary item to a non-existing item', function () {
     $subscription = makeSubscription();
     $one = makeItem('usd');
@@ -83,6 +100,11 @@ it('throws when setting primary item to a non-existing item', function () {
 
     $unknownId = SubscriptionItemId::generate();
     $subscription->changePrimaryItem($unknownId);
+})->throws(DomainException::class);
+
+it('throws when trying to get primary item when none is set', function () {
+    $subscription = makeSubscription();
+    $subscription->primaryItem();
 })->throws(DomainException::class);
 
 it('changes item quantity for an existing item', function () {

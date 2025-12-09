@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Products;
 
-use AlturaCode\Billing\Core\Money;
+use AlturaCode\Billing\Core\Common\Money;
 use InvalidArgumentException;
 
 final readonly class ProductPrice
