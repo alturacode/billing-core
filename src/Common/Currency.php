@@ -21,6 +21,11 @@ final readonly class Currency implements Stringable
         return new self($code);
     }
 
+    public static function usd(): Currency
+    {
+        return new self('usd');
+    }
+
     public function code(): string
     {
         return $this->code;

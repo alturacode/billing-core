@@ -18,6 +18,11 @@ final readonly class Money
         return new self($data['amount'], Currency::fromString($data['currency']));
     }
 
+    public static function usd(int $amount): self
+    {
+        return new self($amount, Currency::usd());
+    }
+
     public function amount(): int
     {
         return $this->amount;

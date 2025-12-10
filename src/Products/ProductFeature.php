@@ -30,6 +30,11 @@ final readonly class ProductFeature
         );
     }
 
+    public static function create(FeatureKey $key, FeatureValue $value): self
+    {
+        return new self($key, $value);
+    }
+
     public function key(): FeatureKey
     {
         return $this->key;

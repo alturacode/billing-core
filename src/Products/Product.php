@@ -37,6 +37,11 @@ final readonly class Product
         );
     }
 
+    public static function create(ProductId $id, ProductKind $kind, ProductSlug $slug, string $name, string $description): self
+    {
+        return new self($id, $kind, $slug, $name, $description, [], []);
+    }
+
     public function withPrices(ProductPrice ...$prices): self
     {
         return new self($this->id, $this->kind, $this->slug, $this->name, $this->description, $prices, $this->features);

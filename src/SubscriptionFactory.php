@@ -103,7 +103,7 @@ final class SubscriptionFactory
                     id: SubscriptionItemEntitlementId::generate(),
                     key: $feature->key(),
                     value: $feature->value(),
-                ), $addon->features()),
+                ), $product->features()),
             );
         }, $draft->addons));
     }

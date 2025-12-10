@@ -6,6 +6,7 @@ namespace AlturaCode\Billing\Core\Products;
 
 use AlturaCode\Billing\Core\Common\Money;
 use InvalidArgumentException;
+use Symfony\Component\Uid\Ulid;
 
 final readonly class ProductPrice
 {
@@ -28,6 +29,21 @@ final readonly class ProductPrice
             Money::hydrate($data['price']),
             ProductPriceInterval::hydrate($data['interval'])
         );
+    }
+
+    public static function create(ProductPriceId $id, Money $price, ProductPriceInterval $interval): self
+    {
+        return new self($id, $price, $interval);
+    }
+
+    public static function monthly(ProductPriceId $id, Money $price): self
+    {
+        return new self($id, $price, ProductPriceInterval::monthly());
+    }
+
+    public static function yearly(ProductPriceId $id, Money $price): self
+    {
+        return new self($id, $price, ProductPriceInterval::yearly());
     }
 
     public function id(): ProductPriceId
