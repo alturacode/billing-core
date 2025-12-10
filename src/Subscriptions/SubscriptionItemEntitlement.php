@@ -22,7 +22,12 @@ final readonly class SubscriptionItemEntitlement
 
     public static function hydrate(mixed $data): self
     {
-        return new self(...array_values($data));
+        return new self(
+            id: SubscriptionItemEntitlementId::hydrate($data['id']),
+            key: FeatureKey::hydrate($data['key']),
+            value: FeatureValue::hydrate($data['value']),
+            effectiveWindow: isset($data['effective_window']) ? DateRange::hydrate($data['effective_window']) : null
+        );
     }
 
     public static function create(SubscriptionItemEntitlementId $id, FeatureKey $key, FeatureValue $value, ?DateRange $effectiveWindow = null): self
