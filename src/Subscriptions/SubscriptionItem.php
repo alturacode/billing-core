@@ -29,6 +29,7 @@ final readonly class SubscriptionItem
         }
 
         $this->assertValidPeriod();
+        $this->assertEntitlementsAreNotRepeated();
     }
 
     public static function hydrate(array $data): self
@@ -164,6 +165,14 @@ final readonly class SubscriptionItem
 
         if ($this->currentPeriodStartsAt !== null && $this->currentPeriodEndsAt !== null && $this->currentPeriodStartsAt >= $this->currentPeriodEndsAt) {
             throw new DomainException('Current period end date must be after start date.');
+        }
+    }
+
+    private function assertEntitlementsAreNotRepeated(): void
+    {
+        $entitlements = array_map(fn(SubscriptionItemEntitlement $entitlement) => $entitlement->key(), $this->entitlements());
+        if (count(array_unique($entitlements)) !== count($entitlements)) {
+            throw new DomainException('Subscription entitlements must be unique.');
         }
     }
 }
