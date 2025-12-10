@@ -189,13 +189,12 @@ This is the main entry point most applications and framework adapters use.
 ```php
 use AlturaCode\Billing\Core\EntitlementCheckerFactory;
 use AlturaCode\Billing\Core\EntitlementResolver;
-use AlturaCode\Billing\Core\Common\FeatureKey;
 
 $factory = new EntitlementCheckerFactory(new EntitlementResolver());
 
 $now = new \DateTimeImmutable();
 $checker = $factory->create($subscription, $now); // AlturaCode\Billing\Core\EntitlementChecker
-$checker->canUse(FeatureKey::fromString('projects'), 3); // true or false
+$checker->canUse('projects', 3); // true or false
 ```
 
 ---
