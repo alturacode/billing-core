@@ -6,27 +6,27 @@ namespace AlturaCode\Billing\Core\Provider;
 
 interface ExternalIdMapper
 {
-    /**
-     * @param string $type
-     * @param array<array<string, string>> $map
-     * @param string $externalId
-     * @return void
-     */
-    public function store(string $type, array  $map, string $externalId): void;
+    public function store(string $type, array $internalId, string $externalId): void;
+
+    public function storeMultiple(array $data): void;
+
+    public function getExternalId(string $type, string $internalId, string $provider): string|null;
 
     /**
      * @param string $type
-     * @param string|array<string> $internalId
+     * @param array $internalIds
      * @param string $provider
-     * @return string|array<array<string, string>>|null
+     * @return array<string>
      */
-    public function getExternalId(string $type, string|array $internalId, string $provider): string|array|null;
+    public function getExternalIds(string $type, array $internalIds, string $provider): array;
+
+    public function getInternalId(string $type, string $externalId, string $provider): string|null;
 
     /**
      * @param string $type
-     * @param string|array<string> $externalId
+     * @param array<string> $externalIds
      * @param string $provider
-     * @return string|array<array<string, string>>|null
+     * @return array<string>
      */
-    public function getInternalId(string $type, string|array $externalId, string $provider): string|array|null;
+    public function getInternalIds(string $type, array $externalIds, string $provider): array;
 }
