@@ -18,8 +18,9 @@ final readonly class EntitlementChecker
     {
     }
 
-    public function canUse(FeatureKey $key, int $newAmount = 1): bool
+    public function canUse(string $keyName, int $newAmount = 1): bool
     {
+        $key = FeatureKey::fromString($keyName);
         $effectiveEntitlement = $this->effectiveEntitlements[$key->value()] ?? null;
 
         if ($effectiveEntitlement === null) {
