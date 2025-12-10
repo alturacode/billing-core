@@ -18,7 +18,7 @@ final readonly class EntitlementChecker
     {
     }
 
-    public function check(FeatureKey $key, int $newAmount = 1): bool
+    public function canUse(FeatureKey $key, int $newAmount = 1): bool
     {
         $effectiveEntitlement = $this->effectiveEntitlements[$key->value()] ?? null;
 

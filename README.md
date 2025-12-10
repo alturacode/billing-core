@@ -5,14 +5,15 @@ Framework-agnostic billing engine for PHP apps. Designed for multiple billing pr
 This package contains the **core billing domain and orchestration logic**:
 
 - Products, prices, intervals, and features
-- Subscriptions and subscription items
+- Subscriptions, subscription items, entitlements and feature usage
 - Provider-agnostic subscription workflows (create, cancel, pause, resume)
 - A pluggable provider registry so you can swap Stripe, PayPal, or any other gateway
 
 Framework-specific integrations (for example, Laravel) and concrete billing providers (for example, Stripe) live in **separate packages**, such as:
 
-- `alturacode/billing-stripe` — Stripe provider implementation
-- `alturacode/billing-laravel` — Laravel adapter
+- `alturacode/billing-stripe` — Stripe provider implementation (in progress)
+- `alturacode/billing-paypal` — Stripe provider implementation (planned)
+- `alturacode/billing-laravel` — [Laravel adapter](https://github.com/alturacode/billing-laravel)
 
 This README focuses on the **core package** and doubles as its main documentation.
 
@@ -94,7 +95,7 @@ To actually connect to a billing gateway, install at least one **provider**:
 composer require alturacode/billing-stripe
 ```
 
-And, if you want framework helpers, install a **framework adapter** (for example, Laravel):
+And, if you want framework helpers, install a **framework adapter**, for example:
 
 ```bash
 composer require alturacode/billing-laravel
@@ -108,8 +109,8 @@ The core package exposes a small set of domain concepts. The namespaces below ar
 
 ### Money & Currency
 
-- `AlturaCode\Billing\Core\Money`
-- `AlturaCode\Billing\Core\Currency`
+- `AlturaCode\Billing\Core\Common\Money`
+- `AlturaCode\Billing\Core\Common\Currency`
 
 These model monetary values and currencies. Prices on products are expressed with these types.
 
@@ -133,8 +134,6 @@ You are free to map these to your own product tables, configuration files, or ex
 Located under `AlturaCode\Billing\Core\Features`:
 
 - `Feature` — a capability your subscription unlocks (for example, `projects`, `seats`, `storage_gb`)
-- `FeatureKey` — identifier for a feature
-- `FeatureKind` — describes what kind of feature it is (boolean, quota, etc.)
 
 Features are typically associated with products or prices via `ProductFeature`.
 
@@ -146,12 +145,12 @@ Located under `AlturaCode\Billing\Core\Subscriptions`:
 - `SubscriptionId` — identifier for a subscription
 - `SubscriptionName` — logical name (for example, `default`, `primary`, `main`)
 - `SubscriptionBillable` — polymorphic-style identifier of your customer in your own system
-- `SubscriptionItem` / `SubscriptionItemId` — line items inside a subscription (base plan, add-ons)
-- `SubscriptionStatus` — status (for example, Active, Paused, Canceled, Incomplete)
 - `SubscriptionProvider` — which billing provider this subscription belongs to (for example, `stripe`)
+- `SubscriptionItem` — line items inside a subscription (base plan, add-ons) 
+- `SubscriptionItemEntitlement` - Entitlements granted by a subscription item
 - `SubscriptionRepository` — abstraction that you implement to persist subscriptions
 
-Subscriptions are **provider-agnostic**; provider-specific IDs and state are managed by provider implementations and stored alongside subscriptions using your `SubscriptionRepository`.
+Subscriptions are **provider-agnostic**; provider-specific IDs and state are managed by provider implementations and stored alongside subscriptions using `AlturaCode\Billing\Core\Provider\ExternalIdMapper`.
 
 ### Billing Providers
 
@@ -159,7 +158,8 @@ Located under `AlturaCode\Billing\Core\Provider`:
 
 - `BillingProvider` — interface that concrete providers implement
 - `BillingProviderRegistry` — registry mapping provider names (for example, `stripe`) to `BillingProvider` instances
-- `BillingProviderResult`, `BillingProviderResultClientAction`, `BillingProviderResultClientActionType` — describe the outcome of provider operations
+- `BillingProviderResult`, `BillingProviderResultClientAction`, `BillingProviderResultClientActionType` — describe the outcome of provider operations.
+- `SynchronousBillingProvider` - Basic billing provider implementation used for testing, demos, etc.
 
 The **core** never directly calls Stripe or PayPal itself. Instead, it calls a `BillingProvider` implementation supplied by a provider package (for example, `billing-stripe`).
 
@@ -181,6 +181,22 @@ It exposes high-level methods:
 - `resumeSubscription(...)`
 
 This is the main entry point most applications and framework adapters use.
+
+### EntitlementCheckerFactory
+
+`EntitlementCheckerFactory` is a factory for `EntitlementChecker` instances that can be used to check if a given feature can be used or consumed.
+
+```php
+use AlturaCode\Billing\Core\EntitlementCheckerFactory;
+use AlturaCode\Billing\Core\EntitlementResolver;
+use AlturaCode\Billing\Core\Common\FeatureKey;
+
+$factory = new EntitlementCheckerFactory(new EntitlementResolver());
+
+$now = new \DateTimeImmutable();
+$checker = $factory->for($subscription, $now); // AlturaCode\Billing\Core\EntitlementChecker
+$checker->canUse(FeatureKey::fromString('projects'), 3); // true or false
+```
 
 ---
 
