@@ -6,7 +6,7 @@ namespace AlturaCode\Billing\Core;
 
 use AlturaCode\Billing\Core\Common\FeatureKey;
 use AlturaCode\Billing\Core\Common\FeatureValue;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionEntitlement;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement;
 
 final readonly class EffectiveEntitlement
 {
@@ -15,12 +15,12 @@ final readonly class EffectiveEntitlement
     {
     }
 
-    public static function fromGrant(SubscriptionEntitlement $grant): self
+    public static function fromGrant(SubscriptionItemEntitlement $grant): self
     {
         return new self($grant->key(), $grant->value());
     }
 
-    public function combinedWithGrant(SubscriptionEntitlement $grant): self
+    public function combinedWithGrant(SubscriptionItemEntitlement $grant): self
     {
         return new self(
             $this->key,

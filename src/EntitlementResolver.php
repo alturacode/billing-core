@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AlturaCode\Billing\Core;
 
 use DateTimeImmutable;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionEntitlement;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement;
 
 final readonly class EntitlementResolver
 {
     /**
-     * @param array<SubscriptionEntitlement> $grants
+     * @param array<SubscriptionItemEntitlement> $grants
      * @return array<string, EffectiveEntitlement>
      */
     public function resolve(array $grants, DateTimeImmutable $at): array
@@ -35,7 +35,7 @@ final readonly class EntitlementResolver
         return $effective;
     }
 
-    private function isActive(SubscriptionEntitlement $grant, DateTimeImmutable $at): bool
+    private function isActive(SubscriptionItemEntitlement $grant, DateTimeImmutable $at): bool
     {
         return $grant->isActiveAt($at);
     }

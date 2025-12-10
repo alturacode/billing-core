@@ -7,8 +7,8 @@ use AlturaCode\Billing\Core\Products\ProductPriceId;
 use AlturaCode\Billing\Core\Products\ProductPriceInterval;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionBillable;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionEntitlement;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionEntitlementId;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItem;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemId;
@@ -83,13 +83,15 @@ it('changes the primary item when provided id exists', function () {
 });
 
 it('adds entitlements', function () {
-    $subscription = makeSubscription();
-    $entitlement = SubscriptionEntitlement::create(
-        id: SubscriptionEntitlementId::generate(),
+    $entitlement = SubscriptionItemEntitlement::create(
+        id: SubscriptionItemEntitlementId::generate(),
         key: FeatureKey::fromString('feature'),
         value: FeatureValue::flagOn(),
     );
-    $subscription = $subscription->withEntitlements($entitlement);
+
+    $item = makeItem();
+    $subscription = makeSubscription()->withPrimaryItem($item);
+    $subscription = $subscription->addEntitlementToItem($item, $entitlement);
     expect($subscription->entitlements())->toHaveCount(1);
 });
 

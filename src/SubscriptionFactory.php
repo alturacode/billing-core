@@ -10,10 +10,10 @@ use AlturaCode\Billing\Core\Products\ProductKind;
 use AlturaCode\Billing\Core\Products\ProductPriceId;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionBillable;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionEntitlement;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionEntitlementId;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItem;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionProvider;
@@ -36,13 +36,17 @@ final class SubscriptionFactory
 
         $subscription = $this->makeSubscription($draft);
         $subscription = $this->addAddons($subscription, $productList, $draft);
-        $subscription = $this->addEntitlementsFromProductList($subscription, $productList);
         return $subscription->withPrimaryItem(SubscriptionItem::create(
             id: SubscriptionItemId::generate(),
             priceId: $productPriceId,
             quantity: $draft->quantity,
             price: $primaryProductPrice->price(),
-            interval: $primaryProductPrice->interval()
+            interval: $primaryProductPrice->interval(),
+            entitlements: array_map(fn(ProductFeature $feature) => SubscriptionItemEntitlement::create(
+                id: SubscriptionItemEntitlementId::generate(),
+                key: $feature->key(),
+                value: $feature->value(),
+            ), $primaryProduct->features()),
         ));
     }
 
@@ -94,7 +98,12 @@ final class SubscriptionFactory
                 priceId: $addonPriceId,
                 quantity: $addon['quantity'],
                 price: $product->findPrice($addonPriceId)->price(),
-                interval: $product->findPrice($addonPriceId)->interval()
+                interval: $product->findPrice($addonPriceId)->interval(),
+                entitlements: array_map(fn(ProductFeature $feature) => SubscriptionItemEntitlement::create(
+                    id: SubscriptionItemEntitlementId::generate(),
+                    key: $feature->key(),
+                    value: $feature->value(),
+                ), $addon->features()),
             );
         }, $draft->addons));
     }
@@ -118,23 +127,5 @@ final class SubscriptionFactory
             throw new RuntimeException('Primary product must be a plan.');
         }
         return $primaryProduct;
-    }
-
-    /**
-     * @param Subscription $subscription
-     * @param array<Product> $productList
-     * @return Subscription
-     */
-    private function addEntitlementsFromProductList(Subscription $subscription, array $productList): Subscription
-    {
-        foreach ($productList as $product) {
-            $subscription = $subscription->withEntitlements(...array_map(fn(ProductFeature $feature) => SubscriptionEntitlement::create(
-                id: SubscriptionEntitlementId::generate(),
-                key: $feature->key(),
-                value: $feature->value(),
-            ), $product->features()));
-        }
-
-        return $subscription;
     }
 }

@@ -7,7 +7,7 @@ namespace AlturaCode\Billing\Core\Subscriptions;
 use Stringable;
 use Symfony\Component\Uid\Ulid;
 
-final readonly class SubscriptionEntitlementId implements Stringable
+final readonly class SubscriptionItemEntitlementId implements Stringable
 {
     public function __construct(private Ulid $value)
     {
@@ -20,7 +20,7 @@ final readonly class SubscriptionEntitlementId implements Stringable
 
     public static function hydrate(mixed $value): self
     {
-        return SubscriptionEntitlementId::fromString((string) $value);
+        return SubscriptionItemEntitlementId::fromString((string) $value);
     }
 
     public static function fromString(string $value): self
@@ -33,7 +33,7 @@ final readonly class SubscriptionEntitlementId implements Stringable
         return $this->value->toString();
     }
 
-    public function equals(SubscriptionEntitlementId $other): bool
+    public function equals(SubscriptionItemEntitlementId $other): bool
     {
         return $this->value === $other->value;
     }

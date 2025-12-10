@@ -19,6 +19,7 @@ final readonly class SubscriptionItem
         private int                  $quantity,
         private Money                $price,
         private ProductPriceInterval $interval,
+        private array                $entitlements,
         private ?DateTimeImmutable   $currentPeriodStartsAt = null,
         private ?DateTimeImmutable   $currentPeriodEndsAt = null,
     )
@@ -38,6 +39,7 @@ final readonly class SubscriptionItem
             quantity: $data['quantity'],
             price: Money::hydrate($data['price']),
             interval: ProductPriceInterval::hydrate($data['interval']),
+            entitlements: array_map(fn(array $entitlement) => SubscriptionItemEntitlement::hydrate($entitlement), $data['entitlements'] ?? []),
             currentPeriodStartsAt: isset($data['current_period_starts_at'])
                 ? DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $data['current_period_starts_at'])
                 : null,
@@ -52,7 +54,8 @@ final readonly class SubscriptionItem
         ProductPriceId       $priceId,
         int                  $quantity,
         Money                $price,
-        ProductPriceInterval $interval
+        ProductPriceInterval $interval,
+        array                $entitlements = [],
     ): self
     {
         return new self(
@@ -60,7 +63,8 @@ final readonly class SubscriptionItem
             priceId: $priceId,
             quantity: $quantity,
             price: $price,
-            interval: $interval
+            interval: $interval,
+            entitlements: $entitlements
         );
     }
 
@@ -99,6 +103,14 @@ final readonly class SubscriptionItem
         return $this->currentPeriodEndsAt;
     }
 
+    /**
+     * @return SubscriptionItemEntitlement[]
+     */
+    public function entitlements(): array
+    {
+        return $this->entitlements;
+    }
+
     public function withQuantity(int $quantity): self
     {
         return new self(
@@ -107,6 +119,7 @@ final readonly class SubscriptionItem
             quantity: $quantity,
             price: $this->price,
             interval: $this->interval,
+            entitlements: $this->entitlements,
             currentPeriodStartsAt: $this->currentPeriodStartsAt,
             currentPeriodEndsAt: $this->currentPeriodEndsAt
         );
@@ -120,8 +133,22 @@ final readonly class SubscriptionItem
             quantity: $this->quantity,
             price: $this->price,
             interval: $this->interval,
+            entitlements: $this->entitlements,
             currentPeriodStartsAt: $currentPeriodStartsAt,
             currentPeriodEndsAt: $currentPeriodEndsAt
+        );
+    }
+
+    public function withEntitlements(SubscriptionItemEntitlement ...$entitlements): self
+    {
+        return new self(
+            id: $this->id,
+            priceId: $this->priceId,
+            quantity: $this->quantity,
+            price: $this->price,
+            interval: $this->interval,
+            entitlements: $entitlements,
+            currentPeriodStartsAt: $this->currentPeriodStartsAt,
         );
     }
 

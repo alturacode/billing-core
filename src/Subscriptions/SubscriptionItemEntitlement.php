@@ -9,13 +9,13 @@ use AlturaCode\Billing\Core\Common\DateRange;
 use AlturaCode\Billing\Core\Common\FeatureKey;
 use AlturaCode\Billing\Core\Common\FeatureValue;
 
-final readonly class SubscriptionEntitlement
+final readonly class SubscriptionItemEntitlement
 {
     private function __construct(
-        private SubscriptionEntitlementId $id,
-        private FeatureKey                $key,
-        private FeatureValue              $value,
-        private ?DateRange                $effectiveWindow
+        private SubscriptionItemEntitlementId $id,
+        private FeatureKey                    $key,
+        private FeatureValue                  $value,
+        private ?DateRange                    $effectiveWindow
     )
     {
     }
@@ -25,12 +25,12 @@ final readonly class SubscriptionEntitlement
         return new self(...array_values($data));
     }
 
-    public static function create(SubscriptionEntitlementId $id, FeatureKey $key, FeatureValue $value, ?DateRange $effectiveWindow = null): self
+    public static function create(SubscriptionItemEntitlementId $id, FeatureKey $key, FeatureValue $value, ?DateRange $effectiveWindow = null): self
     {
         return new self($id, $key, $value, $effectiveWindow);
     }
 
-    public function id(): SubscriptionEntitlementId
+    public function id(): SubscriptionItemEntitlementId
     {
         return $this->id;
     }

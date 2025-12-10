@@ -19,7 +19,6 @@ final readonly class Subscription
         private SubscriptionName     $name,
         private SubscriptionStatus   $status,
         private array                $items,
-        private array                $entitlements,
         private ?SubscriptionItemId  $primaryItemId,
         private DateTimeImmutable    $createdAt,
         private bool                 $cancelAtPeriodEnd = false,
@@ -43,7 +42,6 @@ final readonly class Subscription
             name: SubscriptionName::hydrate($data['name']),
             status: SubscriptionStatus::from($data['status']),
             items: array_map(fn(array $item) => SubscriptionItem::hydrate($item), $data['items']),
-            entitlements: array_map(fn(array $entitlement) => SubscriptionEntitlement::hydrate($entitlement), $data['entitlements'] ?? []),
             primaryItemId: $data['primary_item_id'] ? SubscriptionItemId::hydrate($data['primary_item_id']) : null,
             createdAt: DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $data['created_at']),
             cancelAtPeriodEnd: $data['cancel_at_period_end'],
@@ -67,7 +65,6 @@ final readonly class Subscription
             name: $name,
             status: SubscriptionStatus::Incomplete,
             items: [],
-            entitlements: [],
             primaryItemId: null,
             createdAt: new DateTimeImmutable(),
             trialEndsAt: $trialEndsAt
@@ -104,9 +101,10 @@ final readonly class Subscription
         return $this->items;
     }
 
+    /** @return SubscriptionItemEntitlement[] */
     public function entitlements(): array
     {
-        return $this->entitlements;
+        return array_merge(...array_map(fn(SubscriptionItem $item) => $item->entitlements(), $this->items));
     }
 
     public function cancelAtPeriodEnd(): bool
@@ -260,9 +258,12 @@ final readonly class Subscription
         return $this->copy(items: $items);
     }
 
-    public function withEntitlements(SubscriptionEntitlement ...$entitlements): Subscription
+    public function addEntitlementToItem(SubscriptionItem $item, SubscriptionItemEntitlement ...$entitlements): Subscription
     {
-        return $this->copy(entitlements: $entitlements);
+        return $this->copy(items: array_map(
+            fn(SubscriptionItem $i) => $i->id()->equals($item->id()) ? $i->withEntitlements(...$entitlements) : $i,
+            $this->items
+        ));
     }
 
     public function withPrimaryItem(SubscriptionItem $item): Subscription
@@ -331,7 +332,6 @@ final readonly class Subscription
         ?SubscriptionName     $name = null,
         ?SubscriptionStatus   $status = null,
         ?array                $items = null,
-        ?array                $entitlements = null,
         ?SubscriptionItemId   $primaryItemId = null,
         ?DateTimeImmutable    $createdAt = null,
         ?bool                 $cancelAtPeriodEnd = null,
@@ -346,7 +346,6 @@ final readonly class Subscription
             name: $name ?? $this->name,
             status: $status ?? $this->status,
             items: $items ?? $this->items,
-            entitlements: $entitlements ?? $this->entitlements,
             primaryItemId: $primaryItemId ?? $this->primaryItemId,
             createdAt: $createdAt ?? $this->createdAt,
             cancelAtPeriodEnd: $cancelAtPeriodEnd !== null ? $cancelAtPeriodEnd : $this->cancelAtPeriodEnd,
