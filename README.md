@@ -194,7 +194,7 @@ use AlturaCode\Billing\Core\Common\FeatureKey;
 $factory = new EntitlementCheckerFactory(new EntitlementResolver());
 
 $now = new \DateTimeImmutable();
-$checker = $factory->for($subscription, $now); // AlturaCode\Billing\Core\EntitlementChecker
+$checker = $factory->create($subscription, $now); // AlturaCode\Billing\Core\EntitlementChecker
 $checker->canUse(FeatureKey::fromString('projects'), 3); // true or false
 ```
 

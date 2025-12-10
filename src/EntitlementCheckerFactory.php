@@ -15,7 +15,7 @@ final readonly class EntitlementCheckerFactory
     {
     }
 
-    public function for(Subscription $subscription, DateTimeImmutable $at): EntitlementChecker
+    public function create(Subscription $subscription, DateTimeImmutable $at): EntitlementChecker
     {
         return new EntitlementChecker($this->entitlementResolver->resolve($subscription->entitlements(), $at));
     }
