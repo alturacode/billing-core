@@ -135,7 +135,7 @@ Located under `AlturaCode\Billing\Core\Features`:
 
 - `Feature` — a capability your subscription unlocks (for example, `projects`, `seats`, `storage_gb`)
 
-Features are typically associated with products or prices via `ProductFeature`.
+Features are associated with products via `ProductFeature`.
 
 ### Subscriptions
 
