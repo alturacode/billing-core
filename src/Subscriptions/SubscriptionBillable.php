@@ -39,7 +39,7 @@ final readonly class SubscriptionBillable
         return $this->type;
     }
     
-    public function id(): mixed
+    public function id(): string|int
     {
         return $this->id;
     }
