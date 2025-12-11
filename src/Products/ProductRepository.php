@@ -7,6 +7,7 @@ interface ProductRepository
     public function all(): array;
     public function find(ProductId $productId): ?Product;
     public function findByPriceId(ProductPriceId $priceId): ?Product;
+    public function findBySlug(ProductSlug $slug): ?Product;
 
     /**
      * @param array $priceIds
