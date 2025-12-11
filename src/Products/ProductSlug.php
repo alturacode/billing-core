@@ -32,6 +32,11 @@ final readonly class ProductSlug implements Stringable
         return ProductSlug::fromString((string) $value);
     }
 
+    public function equals(ProductSlug $other): bool
+    {
+        return $this->value === $other->value;
+    }
+
     public function value(): string
     {
         return $this->value;
