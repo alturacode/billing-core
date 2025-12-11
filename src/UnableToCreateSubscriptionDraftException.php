@@ -15,6 +15,6 @@ final class UnableToCreateSubscriptionDraftException extends RuntimeException
 
     public static function missingPlanPriceIdentifier(): self
     {
-        return new self("Missing plan price identifier. You must provide either a plan price id or plan slug with interval information.");
+        return new self("Missing plan price identifier. You must provide either a plan price id or plan slug with currency and interval information.");
     }
 }

@@ -77,7 +77,8 @@ it('is able to resolve product price by product slug and price interval informat
         provider: 'stripe',
         plan: 'plan',
         intervalType: 'year',
-        intervalCount: 1
+        intervalCount: 1,
+        currency: 'usd',
     ));
 
     expect($subscription->primaryItem()->price()->amount())->toBe(100 * 12)

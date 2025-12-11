@@ -17,6 +17,7 @@ final class SubscriptionDraftBuilder
     private ?string $plan = null;
     private ?string $intervalType = null;
     private int $intervalCount = 1;
+    private ?string $currency = null;
     private string $provider;
     private int $quantity = 1;
     private ?DateTimeImmutable $trialEndsAt = null;
@@ -48,11 +49,12 @@ final class SubscriptionDraftBuilder
         return $this;
     }
 
-    public function withPlan(string $plan, string $intervalType, int $intervalCount): self
+    public function withPlan(string $plan, string $intervalType, int $intervalCount, string $currency): self
     {
         $this->plan = $plan;
         $this->intervalType = $intervalType;
         $this->intervalCount = $intervalCount;
+        $this->currency = $currency;
         return $this;
     }
 
@@ -91,6 +93,7 @@ final class SubscriptionDraftBuilder
             priceId: $this->priceId,
             intervalType: $this->intervalType,
             intervalCount: $this->intervalCount,
+            currency: $this->currency,
             trialEndsAt: $this->trialEndsAt,
             addons: $this->addons
         );
@@ -105,7 +108,7 @@ final class SubscriptionDraftBuilder
             }
         }
 
-        if (empty($this->priceId) && (empty($this->plan) || empty($this->intervalType) || empty($this->intervalCount))) {
+        if (empty($this->priceId) && (empty($this->plan) || empty($this->intervalType) || empty($this->intervalCount) || empty($this->currency))) {
             throw UnableToCreateSubscriptionDraftException::missingPlanPriceIdentifier();
         }
     }

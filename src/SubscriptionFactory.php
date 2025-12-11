@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core;
 
+use AlturaCode\Billing\Core\Common\Currency;
 use AlturaCode\Billing\Core\Products\Product;
 use AlturaCode\Billing\Core\Products\ProductFeature;
 use AlturaCode\Billing\Core\Products\ProductKind;
@@ -12,10 +13,10 @@ use AlturaCode\Billing\Core\Products\ProductPriceInterval;
 use AlturaCode\Billing\Core\Products\ProductSlug;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionBillable;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItem;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionProvider;
@@ -115,11 +116,11 @@ final class SubscriptionFactory
             $primaryProduct = array_find($productList, fn(Product $product) => $product->hasPrice(
                 ProductPriceId::fromString($draft->priceId)
             ));
-        } else if ($draft->plan && $draft->intervalType && $draft->intervalCount) {
+        } else if ($draft->plan && $draft->intervalType && $draft->intervalCount && $draft->currency) {
             $slug = ProductSlug::fromString($draft->plan);
-            $primaryProduct = array_find($productList, fn(Product $product) => $product->slug()->equals($slug) && $product->hasPriceWithInterval(
-                ProductPriceInterval::from($draft->intervalType, $draft->intervalCount)
-            ));
+            $primaryProduct = array_find($productList, fn(Product $product) => $product->slug()->equals($slug) && $product->hasPriceWithIntervalAndCurrency(
+                    ProductPriceInterval::from($draft->intervalType, $draft->intervalCount), Currency::fromString($draft->currency)
+                ));
         } else {
             throw new RuntimeException('Plan price identifier or plan, interval type and interval count must be provided.');
         }
@@ -135,7 +136,10 @@ final class SubscriptionFactory
         if ($draft->priceId) {
             $primaryProductPrice = $primaryProduct->findPrice(ProductPriceId::fromString($draft->priceId));
         } else {
-            $primaryProductPrice = $primaryProduct->findPriceForInterval(ProductPriceInterval::from($draft->intervalType, $draft->intervalCount));
+            $primaryProductPrice = $primaryProduct->findPriceForIntervalAndCurrency(ProductPriceInterval::from(
+                $draft->intervalType,
+                $draft->intervalCount
+            ), Currency::fromString($draft->currency));
         }
 
         return [$primaryProduct, $primaryProductPrice];

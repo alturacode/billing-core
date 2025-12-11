@@ -59,14 +59,15 @@ it('builds a draft using plan slug and interval information', function () {
         ->withName('default')
         ->withBillable('user', 'user_1')
         ->withProvider('stripe')
-        ->withPlan('free', 'monthly', 1)
+        ->withPlan('free', 'monthly', 1, 'usd')
         ->build();
 
     expect($draft)->toBeInstanceOf(SubscriptionDraft::class)
         ->and($draft->priceId)->toBeNull()
         ->and($draft->plan)->toBe('free')
         ->and($draft->intervalType)->toBe('monthly')
-        ->and($draft->intervalCount)->toBe(1);
+        ->and($draft->intervalCount)->toBe(1)
+        ->and($draft->currency)->toBe('usd');
 });
 
 it('throws exception if any required property is missing', function () {
@@ -86,5 +87,5 @@ it('throws exception if plan price identifier is missing', function () {
     $builder = new SubscriptionDraftBuilder();
 
     expect(fn() => $builder->withName('test')->withBillable('user', 'user_1')->withProvider('stripe')->build())
-        ->toThrow(UnableToCreateSubscriptionDraftException::class, "Missing plan price identifier. You must provide either a plan price id or plan slug with interval information.");
+        ->toThrow(UnableToCreateSubscriptionDraftException::class, "Missing plan price identifier. You must provide either a plan price id or plan slug with currency and interval information.");
 });

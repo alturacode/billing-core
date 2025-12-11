@@ -18,6 +18,7 @@ final class SubscriptionDraft
         public ?string            $priceId = null,
         public ?string            $intervalType = null,
         public ?int               $intervalCount = null,
+        public ?string            $currency = null,
         public ?DateTimeImmutable $trialEndsAt = null,
         public array              $addons = [],
     )

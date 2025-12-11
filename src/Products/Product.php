@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Products;
 
+use AlturaCode\Billing\Core\Common\Currency;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -109,19 +110,24 @@ final readonly class Product
         throw new RuntimeException('Product price not found');
     }
 
-    public function hasPriceWithInterval(ProductPriceInterval $interval): bool
+    public function hasPriceWithIntervalAndCurrency(ProductPriceInterval $interval, Currency $currency): bool
     {
-        return array_reduce($this->prices, fn($carry, $price) => $carry || $price->interval()->equals($interval), false);
+        return array_reduce($this->prices, fn($carry, ProductPrice $price) => $carry || $price->interval()->equals($interval) && $price->price()->currency()->equals($currency), false);
     }
 
-    public function findPriceForInterval(ProductPriceInterval $from): ProductPrice
+    public function findPriceForIntervalAndCurrency(ProductPriceInterval $from, Currency $currency): ProductPrice
     {
         foreach ($this->prices as $price) {
-            if ($price->interval()->equals($from)) {
+            if ($price->interval()->equals($from) && $price->price()->currency()->equals($currency)) {
                 return $price;
             }
         }
-        throw new RuntimeException('Product price not found for interval');
+        throw new RuntimeException(sprintf(
+            'Product price for interval type %s and interval count %d and currency %s not found',
+            $from->type(),
+            $from->count(),
+            $currency->code()
+        ));
     }
 
     private function assertValid(): void
