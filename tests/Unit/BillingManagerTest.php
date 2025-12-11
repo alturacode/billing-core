@@ -87,7 +87,7 @@ it('creates a new subscription successfully', function () {
         ->willReturn(null);
 
     $this->products->expects($this->once())
-        ->method('findMultipleByPriceIds')
+        ->method('all')
         ->willReturn([$product]);
 
     $this->providerRegistry->expects($this->once())

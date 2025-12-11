@@ -39,12 +39,7 @@ final readonly class BillingManager
             throw SubscriptionAlreadyExistsException::forLogicalName($draft->name);
         }
 
-        $productList = $this->products->findMultipleByPriceIds([
-            ProductPriceId::fromString($draft->priceId),
-            ...array_map(fn($addon) => ProductPriceId::fromString($addon['priceId']), $draft->addons),
-        ]);
-
-        $subscription = new SubscriptionFactory()->fromProductListAndDraft($productList, $draft);
+        $subscription = new SubscriptionFactory()->fromProductListAndDraft($this->products->all(), $draft);
         $gateway = $this->provider->subscriptionProviderFor($draft->provider);
         $result = $gateway->create($subscription, $providerOptions);
         $this->subscriptions->save($result->subscription);
