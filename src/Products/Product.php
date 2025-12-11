@@ -109,6 +109,21 @@ final readonly class Product
         throw new RuntimeException('Product price not found');
     }
 
+    public function hasPriceWithInterval(ProductPriceInterval $interval): bool
+    {
+        return array_reduce($this->prices, fn($carry, $price) => $carry || $price->interval()->equals($interval), false);
+    }
+
+    public function findPriceForInterval(ProductPriceInterval $from): ProductPrice
+    {
+        foreach ($this->prices as $price) {
+            if ($price->interval()->equals($from)) {
+                return $price;
+            }
+        }
+        throw new RuntimeException('Product price not found for interval');
+    }
+
     private function assertValid(): void
     {
         // assert prices are an instance of PlanPrice

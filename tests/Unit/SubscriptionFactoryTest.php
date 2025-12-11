@@ -43,8 +43,8 @@ it('creates a subscription with addons and features', function () {
         name: 'default',
         billableId: 'user_1',
         billableType: 'user',
-        priceId: $plan->prices()[0]->id()->value(),
         provider: 'stripe',
+        priceId: $plan->prices()[0]->id()->value(),
         addons: [
             ['priceId' => $addon->prices()[0]->id()->value(), 'quantity' => 1]
         ],
@@ -53,4 +53,34 @@ it('creates a subscription with addons and features', function () {
     expect($subscription->name()->value())->toBe('default')
         ->and($subscription->billable()->id())->toBe('user_1')
         ->and($subscription->billable()->type())->toBe('user');
+});
+
+it('is able to resolve product price by product slug and price interval information', function () {
+    $plan = Product::create(
+        id: ProductId::generate(),
+        kind: ProductKind::Plan,
+        slug: ProductSlug::fromString('plan'),
+        name: 'Plan',
+        description: 'Plan description',
+    )->withPrices(
+        ProductPrice::monthly(ProductPriceId::generate(), Money::usd(100)),
+        ProductPrice::yearly(ProductPriceId::generate(), Money::usd(100 * 12))
+    )->withFeatures(
+        ProductFeature::create(FeatureKey::fromString('feature_a'), FeatureValue::flagOn())
+    );
+
+    $factory = new SubscriptionFactory();
+    $subscription = $factory->fromProductListAndDraft([$plan], new SubscriptionDraft(
+        name: 'default',
+        billableId: 'user_1',
+        billableType: 'user',
+        provider: 'stripe',
+        plan: 'plan',
+        intervalType: 'year',
+        intervalCount: 1
+    ));
+
+    expect($subscription->primaryItem()->price()->amount())->toBe(100 * 12)
+        ->and($subscription->primaryItem()->interval()->type())->toBe('year')
+        ->and($subscription->primaryItem()->interval()->count())->toBe(1);
 });

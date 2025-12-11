@@ -10,7 +10,7 @@ final readonly class ProductPriceInterval
 {
     private function __construct(
         private string $type,
-        private int $count
+        private int    $count
     )
     {
         if (!in_array($this->type, ['day', 'week', 'month', 'year'])) {
@@ -35,6 +35,31 @@ final readonly class ProductPriceInterval
         }
 
         return new self($data['type'], $data['count']);
+    }
+
+    public static function from(string $type, int $count): self
+    {
+        return new self($type, $count);
+    }
+
+    public function equals(ProductPriceInterval $other): bool
+    {
+        return $this->type === $other->type && $this->count === $other->count;
+    }
+
+    public static function daily(): self
+    {
+        return new self('day', 1);
+    }
+
+    public static function weekly(): self
+    {
+        return new self('week', 1);
+    }
+
+    public static function biweekly(): self
+    {
+        return new self('week', 2);
     }
 
     public static function monthly(): self

@@ -8,6 +8,8 @@ use AlturaCode\Billing\Core\Products\Product;
 use AlturaCode\Billing\Core\Products\ProductFeature;
 use AlturaCode\Billing\Core\Products\ProductKind;
 use AlturaCode\Billing\Core\Products\ProductPriceId;
+use AlturaCode\Billing\Core\Products\ProductPriceInterval;
+use AlturaCode\Billing\Core\Products\ProductSlug;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionBillable;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId;
@@ -28,17 +30,15 @@ final class SubscriptionFactory
      */
     public function fromProductListAndDraft(array $productList, SubscriptionDraft $draft): Subscription
     {
-        $productPriceId = ProductPriceId::fromString($draft->priceId);
-        $primaryProduct = $this->validatePlan($productList, $productPriceId, $draft);
+        list($primaryProduct, $primaryProductPrice) = $this->validatePlan($productList, $draft);
 
-        $primaryProductPrice = $primaryProduct->findPrice($productPriceId);
         $this->validateAddons($draft, $productList, $primaryProductPrice);
 
         $subscription = $this->makeSubscription($draft);
         $subscription = $this->addAddons($subscription, $productList, $draft);
         return $subscription->withPrimaryItem(SubscriptionItem::create(
             id: SubscriptionItemId::generate(),
-            priceId: $productPriceId,
+            priceId: $primaryProductPrice->id(),
             quantity: $draft->quantity,
             price: $primaryProductPrice->price(),
             interval: $primaryProductPrice->interval(),
@@ -108,16 +108,21 @@ final class SubscriptionFactory
         }, $draft->addons));
     }
 
-    /**
-     * @param array $productList
-     * @param ProductPriceId $productPriceId
-     * @param SubscriptionDraft $draft
-     * @return Product
-     */
-    private function validatePlan(array $productList, ProductPriceId $productPriceId, SubscriptionDraft $draft): Product
+    private function validatePlan(array $productList, SubscriptionDraft $draft): array
     {
-        /** @var Product $primaryProduct */
-        $primaryProduct = array_find($productList, fn(Product $product) => $product->hasPrice($productPriceId));
+        if ($draft->priceId) {
+            /** @var Product $primaryProduct */
+            $primaryProduct = array_find($productList, fn(Product $product) => $product->hasPrice(
+                ProductPriceId::fromString($draft->priceId)
+            ));
+        } else if ($draft->plan && $draft->intervalType && $draft->intervalCount) {
+            $slug = ProductSlug::fromString($draft->plan);
+            $primaryProduct = array_find($productList, fn(Product $product) => $product->slug()->equals($slug) && $product->hasPriceWithInterval(
+                ProductPriceInterval::from($draft->intervalType, $draft->intervalCount)
+            ));
+        } else {
+            throw new RuntimeException('Plan price identifier or plan, interval type and interval count must be provided.');
+        }
 
         if ($primaryProduct === null) {
             throw new RuntimeException(sprintf('Product with price ID %s not found', $draft->priceId));
@@ -126,6 +131,13 @@ final class SubscriptionFactory
         if ($primaryProduct->kind() !== ProductKind::Plan) {
             throw new RuntimeException('Primary product must be a plan.');
         }
-        return $primaryProduct;
+
+        if ($draft->priceId) {
+            $primaryProductPrice = $primaryProduct->findPrice(ProductPriceId::fromString($draft->priceId));
+        } else {
+            $primaryProductPrice = $primaryProduct->findPriceForInterval(ProductPriceInterval::from($draft->intervalType, $draft->intervalCount));
+        }
+
+        return [$primaryProduct, $primaryProductPrice];
     }
 }

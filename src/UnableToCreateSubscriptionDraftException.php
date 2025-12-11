@@ -12,4 +12,9 @@ final class UnableToCreateSubscriptionDraftException extends RuntimeException
     {
         return new self("Missing required property '$property'");
     }
+
+    public static function missingPlanPriceIdentifier(): self
+    {
+        return new self("Missing plan price identifier. You must provide either a plan price id or plan slug with interval information.");
+    }
 }

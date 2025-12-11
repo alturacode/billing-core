@@ -61,8 +61,13 @@ it('throws exception if any required property is missing', function () {
         ->toThrow(UnableToCreateSubscriptionDraftException::class, "Missing required property 'billableId'")
         ->and(fn() => $builder->withName('test')->withBillable('user', '')->build())
         ->toThrow(UnableToCreateSubscriptionDraftException::class, "Missing required property 'billableId'")
-        ->and(fn() => $builder->withName('test')->withBillable('user', 'user_1')->build())
-        ->toThrow(UnableToCreateSubscriptionDraftException::class, "Missing required property 'priceId'")
         ->and(fn() => $builder->withName('test')->withBillable('user', 'user_1')->withPlanPriceId('price_1')->build())
         ->toThrow(UnableToCreateSubscriptionDraftException::class, "Missing required property 'provider'");
+});
+
+it('throws exception if plan price identifier is missing', function () {
+    $builder = new SubscriptionDraftBuilder();
+
+    expect(fn() => $builder->withName('test')->withBillable('user', 'user_1')->withProvider('stripe')->build())
+        ->toThrow(UnableToCreateSubscriptionDraftException::class, "Missing plan price identifier. You must provide either a plan price id or plan slug with interval information.");
 });

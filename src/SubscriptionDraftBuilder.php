@@ -13,7 +13,10 @@ final class SubscriptionDraftBuilder
     private string $name;
     private mixed $billableId;
     private string $billableType;
-    private string $priceId;
+    private ?string $priceId = null;
+    private ?string $plan = null;
+    private ?string $intervalType = null;
+    private int $intervalCount = 1;
     private string $provider;
     private int $quantity = 1;
     private ?DateTimeImmutable $trialEndsAt = null;
@@ -42,6 +45,14 @@ final class SubscriptionDraftBuilder
     {
         $this->priceId = $priceId;
         $this->quantity = $quantity;
+        return $this;
+    }
+
+    public function withPlan(string $plan, string $intervalType, int $intervalCount): self
+    {
+        $this->plan = $plan;
+        $this->intervalType = $intervalType;
+        $this->intervalCount = $intervalCount;
         return $this;
     }
 
@@ -84,11 +95,15 @@ final class SubscriptionDraftBuilder
 
     private function validate(): void
     {
-        $required = ['name', 'billableId', 'billableType', 'priceId', 'provider'];
+        $required = ['name', 'billableId', 'billableType', 'provider'];
         foreach ($required as $property) {
             if (empty($this->{$property})) {
                 throw UnableToCreateSubscriptionDraftException::missingRequiredProperty($property);
             }
+        }
+
+        if (empty($this->priceId) && (empty($this->plan) || empty($this->intervalType) || empty($this->intervalCount))) {
+            throw UnableToCreateSubscriptionDraftException::missingPlanPriceIdentifier();
         }
     }
 }
