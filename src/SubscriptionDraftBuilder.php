@@ -85,9 +85,12 @@ final class SubscriptionDraftBuilder
             name: $this->name,
             billableId: $this->billableId,
             billableType: $this->billableType,
-            priceId: $this->priceId,
             provider: $this->provider,
             quantity: $this->quantity,
+            plan: $this->plan,
+            priceId: $this->priceId,
+            intervalType: $this->intervalType,
+            intervalCount: $this->intervalCount,
             trialEndsAt: $this->trialEndsAt,
             addons: $this->addons
         );

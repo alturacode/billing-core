@@ -52,6 +52,23 @@ it('builds a subscription with custom quantities and trial days', function () {
         ->and($draft->addons[0]['quantity'])->toBe(2);
 });
 
+it('builds a draft using plan slug and interval information', function () {
+    $builder = new SubscriptionDraftBuilder();
+
+    $draft = $builder
+        ->withName('default')
+        ->withBillable('user', 'user_1')
+        ->withProvider('stripe')
+        ->withPlan('free', 'monthly', 1)
+        ->build();
+
+    expect($draft)->toBeInstanceOf(SubscriptionDraft::class)
+        ->and($draft->priceId)->toBeNull()
+        ->and($draft->plan)->toBe('free')
+        ->and($draft->intervalType)->toBe('monthly')
+        ->and($draft->intervalCount)->toBe(1);
+});
+
 it('throws exception if any required property is missing', function () {
     $builder = new SubscriptionDraftBuilder();
 
