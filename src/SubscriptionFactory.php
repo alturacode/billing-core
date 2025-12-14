@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlturaCode\Billing\Core;
 
 use AlturaCode\Billing\Core\Common\Currency;
+use AlturaCode\Billing\Core\Common\Billable;
 use AlturaCode\Billing\Core\Products\Product;
 use AlturaCode\Billing\Core\Products\ProductFeature;
 use AlturaCode\Billing\Core\Products\ProductKind;
@@ -12,7 +13,6 @@ use AlturaCode\Billing\Core\Products\ProductPriceId;
 use AlturaCode\Billing\Core\Products\ProductPriceInterval;
 use AlturaCode\Billing\Core\Products\ProductSlug;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionBillable;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItem;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement;
@@ -79,7 +79,7 @@ final class SubscriptionFactory
         return Subscription::create(
             id: SubscriptionId::generate(),
             name: SubscriptionName::fromString($draft->name),
-            billable: SubscriptionBillable::fromString($draft->billableType, $draft->billableId),
+            billable: Billable::fromString($draft->billableType, $draft->billableId),
             provider: SubscriptionProvider::fromString($draft->provider),
             trialEndsAt: $draft->trialEndsAt
         );

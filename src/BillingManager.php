@@ -7,7 +7,7 @@ namespace AlturaCode\Billing\Core;
 use AlturaCode\Billing\Core\Products\ProductRepository;
 use AlturaCode\Billing\Core\Provider\BillingProviderRegistry;
 use AlturaCode\Billing\Core\Provider\BillingProviderResult;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionBillable;
+use AlturaCode\Billing\Core\Common\Billable;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionRepository;
@@ -30,7 +30,7 @@ final readonly class BillingManager
     public function createSubscription(SubscriptionDraft $draft, array $providerOptions = []): BillingProviderResult
     {
         $subscription = $this->subscriptions->findForBillable(
-            SubscriptionBillable::fromString($draft->billableType, $draft->billableId),
+            Billable::fromString($draft->billableType, $draft->billableId),
             SubscriptionName::fromString($draft->name),
         );
 

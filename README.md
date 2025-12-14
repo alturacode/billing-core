@@ -114,6 +114,10 @@ The core package exposes a small set of domain concepts. The namespaces below ar
 
 These model monetary values and currencies. Prices on products are expressed with these types.
 
+### Billable
+
+- `AlturaCode\Billing\Core\Common\Billable` — polymorphic-style identifier of your customer in your own system
+
 ### Products & Prices
 
 Located under `AlturaCode\Billing\Core\Products`:
@@ -144,7 +148,6 @@ Located under `AlturaCode\Billing\Core\Subscriptions`:
 - `Subscription` — the central aggregate describing a customer’s subscription
 - `SubscriptionId` — identifier for a subscription
 - `SubscriptionName` — logical name (for example, `default`, `primary`, `main`)
-- `SubscriptionBillable` — polymorphic-style identifier of your customer in your own system
 - `SubscriptionProvider` — which billing provider this subscription belongs to (for example, `stripe`)
 - `SubscriptionItem` — line items inside a subscription (base plan, add-ons) 
 - `SubscriptionItemEntitlement` - Entitlements granted by a subscription item
@@ -228,11 +231,7 @@ final class DatabaseProductRepository implements ProductRepository
 `SubscriptionRepository` is responsible for persisting `Subscription` aggregates and querying them by ID or customer + name.
 
 ```php
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionRepository;
-use AlturaCode\Billing\Core\Subscriptions\Subscription;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionBillable;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;
+use AlturaCode\Billing\Core\Common\Billable;use AlturaCode\Billing\Core\Subscriptions\Subscription;use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;use AlturaCode\Billing\Core\Subscriptions\SubscriptionRepository;
 
 final class DatabaseSubscriptionRepository implements SubscriptionRepository
 {
@@ -241,7 +240,7 @@ final class DatabaseSubscriptionRepository implements SubscriptionRepository
         // Query by $id->value() and hydrate Subscription
     }
 
-    public function findForBillable(SubscriptionBillable $billable, SubscriptionName $name): ?Subscription
+    public function findForBillable(Billable $billable, SubscriptionName $name): ?Subscription
     {
         // Query by customer and name
     }

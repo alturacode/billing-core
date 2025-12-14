@@ -2,25 +2,24 @@
 
 declare(strict_types=1);
 
-namespace AlturaCode\Billing\Core\Subscriptions;
+namespace AlturaCode\Billing\Core\Common;
 
 use InvalidArgumentException;
-use Stringable;
 
-final readonly class SubscriptionBillable
+final readonly class Billable
 {
     private function __construct(private string $type, private mixed $id = null)
     {
         if ($type === '') {
-            throw new InvalidArgumentException('Subscription billable type cannot be empty');
+            throw new InvalidArgumentException('Billable type cannot be empty');
         }
 
         if ($id === null) {
-            throw new InvalidArgumentException('Subscription billable id cannot be null');
+            throw new InvalidArgumentException('Billable id cannot be null');
         }
 
         if (!is_string($this->id) && !is_int($this->id)) {
-            throw new InvalidArgumentException('Subscription billable id should be a string or integer');
+            throw new InvalidArgumentException('Billable id should be a string or integer');
         }
     }
 
@@ -29,7 +28,7 @@ final readonly class SubscriptionBillable
         return new self($data['type'], $data['id']);
     }
 
-    public static function fromString(string $type, mixed $id): SubscriptionBillable
+    public static function fromString(string $type, mixed $id): Billable
     {
         return new self($type, $id);
     }

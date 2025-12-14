@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Subscriptions;
 
+use AlturaCode\Billing\Core\Common\Billable;
 use DateTimeImmutable;
 use DomainException;
 
@@ -14,7 +15,7 @@ final readonly class Subscription
      */
     private function __construct(
         private SubscriptionId       $id,
-        private SubscriptionBillable $billable,
+        private Billable             $billable,
         private SubscriptionProvider $provider,
         private SubscriptionName     $name,
         private SubscriptionStatus   $status,
@@ -37,7 +38,7 @@ final readonly class Subscription
     {
         return new self(
             id: SubscriptionId::hydrate($data['id']),
-            billable: SubscriptionBillable::hydrate($data['billable']),
+            billable: Billable::hydrate($data['billable']),
             provider: SubscriptionProvider::hydrate($data['provider']),
             name: SubscriptionName::hydrate($data['name']),
             status: SubscriptionStatus::from($data['status']),
@@ -53,7 +54,7 @@ final readonly class Subscription
     public static function create(
         SubscriptionId       $id,
         SubscriptionName     $name,
-        SubscriptionBillable $billable,
+        Billable             $billable,
         SubscriptionProvider $provider,
         ?DateTimeImmutable   $trialEndsAt = null,
     ): Subscription
@@ -76,7 +77,7 @@ final readonly class Subscription
         return $this->id;
     }
 
-    public function billable(): SubscriptionBillable
+    public function billable(): Billable
     {
         return $this->billable;
     }
@@ -327,7 +328,7 @@ final readonly class Subscription
     /** @noinspection PhpSameParameterValueInspection */
     private function copy(
         ?SubscriptionId       $id = null,
-        ?SubscriptionBillable $billable = null,
+        ?Billable             $billable = null,
         ?SubscriptionProvider $provider = null,
         ?SubscriptionName     $name = null,
         ?SubscriptionStatus   $status = null,
