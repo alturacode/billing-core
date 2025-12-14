@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AlturaCode\Billing\Core;
 
 use AlturaCode\Billing\Core\Common\Currency;
-use AlturaCode\Billing\Core\Common\Billable;
+use AlturaCode\Billing\Core\Common\BillableIdentity;
 use AlturaCode\Billing\Core\Products\Product;
 use AlturaCode\Billing\Core\Products\ProductFeature;
 use AlturaCode\Billing\Core\Products\ProductKind;
@@ -79,7 +79,7 @@ final class SubscriptionFactory
         return Subscription::create(
             id: SubscriptionId::generate(),
             name: SubscriptionName::fromString($draft->name),
-            billable: Billable::fromString($draft->billableType, $draft->billableId),
+            billable: BillableIdentity::fromString($draft->billableType, $draft->billableId),
             provider: SubscriptionProvider::fromString($draft->provider),
             trialEndsAt: $draft->trialEndsAt
         );

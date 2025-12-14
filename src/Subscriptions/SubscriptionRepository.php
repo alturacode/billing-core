@@ -2,7 +2,7 @@
 
 namespace AlturaCode\Billing\Core\Subscriptions;
 
-use AlturaCode\Billing\Core\Common\Billable;
+use AlturaCode\Billing\Core\Common\BillableIdentity;
 
 interface SubscriptionRepository
 {
@@ -10,8 +10,8 @@ interface SubscriptionRepository
     public function findByItemId(SubscriptionItemId $itemId): ?Subscription;
     public function save(Subscription $subscription): void;
     public function findForBillable(
-        Billable         $billable,
+        BillableIdentity $billable,
         SubscriptionName $subscriptionName,
     ): ?Subscription;
-    public function findAllForBillable(Billable $billable): array;
+    public function findAllForBillable(BillableIdentity $billable): array;
 }

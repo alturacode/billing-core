@@ -6,7 +6,7 @@ namespace AlturaCode\Billing\Core\Common;
 
 use InvalidArgumentException;
 
-final readonly class Billable
+final readonly class BillableIdentity
 {
     private function __construct(private string $type, private mixed $id = null)
     {
@@ -28,7 +28,7 @@ final readonly class Billable
         return new self($data['type'], $data['id']);
     }
 
-    public static function fromString(string $type, mixed $id): Billable
+    public static function fromString(string $type, mixed $id): BillableIdentity
     {
         return new self($type, $id);
     }

@@ -8,7 +8,7 @@ use AlturaCode\Billing\Core\Products\ProductPriceId;
 use AlturaCode\Billing\Core\Products\ProductRepository;
 use AlturaCode\Billing\Core\Provider\BillingProviderRegistry;
 use AlturaCode\Billing\Core\Provider\BillingProviderResult;
-use AlturaCode\Billing\Core\Common\Billable;
+use AlturaCode\Billing\Core\Common\BillableIdentity;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;
@@ -53,7 +53,7 @@ final readonly class BillingManager
     public function createSubscription(SubscriptionDraft $draft, array $providerOptions = []): BillingProviderResult
     {
         $subscription = $this->subscriptions->findForBillable(
-            Billable::fromString($draft->billableType, $draft->billableId),
+            BillableIdentity::fromString($draft->billableType, $draft->billableId),
             SubscriptionName::fromString($draft->name),
         );
 

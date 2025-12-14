@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Subscriptions;
 
-use AlturaCode\Billing\Core\Common\Billable;
+use AlturaCode\Billing\Core\Common\BillableIdentity;
 use DateTimeImmutable;
 use DomainException;
 
@@ -15,7 +15,7 @@ final readonly class Subscription
      */
     private function __construct(
         private SubscriptionId       $id,
-        private Billable             $billable,
+        private BillableIdentity     $billable,
         private SubscriptionProvider $provider,
         private SubscriptionName     $name,
         private SubscriptionStatus   $status,
@@ -38,7 +38,7 @@ final readonly class Subscription
     {
         return new self(
             id: SubscriptionId::hydrate($data['id']),
-            billable: Billable::hydrate($data['billable']),
+            billable: BillableIdentity::hydrate($data['billable']),
             provider: SubscriptionProvider::hydrate($data['provider']),
             name: SubscriptionName::hydrate($data['name']),
             status: SubscriptionStatus::from($data['status']),
@@ -54,7 +54,7 @@ final readonly class Subscription
     public static function create(
         SubscriptionId       $id,
         SubscriptionName     $name,
-        Billable             $billable,
+        BillableIdentity     $billable,
         SubscriptionProvider $provider,
         ?DateTimeImmutable   $trialEndsAt = null,
     ): Subscription
@@ -77,7 +77,7 @@ final readonly class Subscription
         return $this->id;
     }
 
-    public function billable(): Billable
+    public function billable(): BillableIdentity
     {
         return $this->billable;
     }
@@ -339,7 +339,7 @@ final readonly class Subscription
     /** @noinspection PhpSameParameterValueInspection */
     private function copy(
         ?SubscriptionId       $id = null,
-        ?Billable             $billable = null,
+        ?BillableIdentity     $billable = null,
         ?SubscriptionProvider $provider = null,
         ?SubscriptionName     $name = null,
         ?SubscriptionStatus   $status = null,

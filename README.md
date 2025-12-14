@@ -231,7 +231,11 @@ final class DatabaseProductRepository implements ProductRepository
 `SubscriptionRepository` is responsible for persisting `Subscription` aggregates and querying them by ID or customer + name.
 
 ```php
-use AlturaCode\Billing\Core\Common\Billable;use AlturaCode\Billing\Core\Subscriptions\Subscription;use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;use AlturaCode\Billing\Core\Subscriptions\SubscriptionRepository;
+use AlturaCode\Billing\Core\Common\BillableIdentity;
+use AlturaCode\Billing\Core\Subscriptions\Subscription;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionRepository;
 
 final class DatabaseSubscriptionRepository implements SubscriptionRepository
 {
@@ -240,7 +244,7 @@ final class DatabaseSubscriptionRepository implements SubscriptionRepository
         // Query by $id->value() and hydrate Subscription
     }
 
-    public function findForBillable(Billable $billable, SubscriptionName $name): ?Subscription
+    public function findForBillable(BillableIdentity $billable, SubscriptionName $name): ?Subscription
     {
         // Query by customer and name
     }

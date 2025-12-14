@@ -3,7 +3,7 @@
 use AlturaCode\Billing\Core\Common\FeatureKey;
 use AlturaCode\Billing\Core\Common\FeatureValue;
 use AlturaCode\Billing\Core\Common\Money;
-use AlturaCode\Billing\Core\Common\Billable;
+use AlturaCode\Billing\Core\Common\BillableIdentity;
 use AlturaCode\Billing\Core\Products\ProductPriceId;
 use AlturaCode\Billing\Core\Products\ProductPriceInterval;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
@@ -23,7 +23,7 @@ function makeSubscription(?DateTimeImmutable $trialEndsAt = null): Subscription 
     return Subscription::create(
         id: SubscriptionId::generate(),
         name: SubscriptionName::fromString('main'),
-        billable: Billable::fromString('user', 1),
+        billable: BillableIdentity::fromString('user', 1),
         provider: SubscriptionProvider::fromString('stripe'),
         trialEndsAt: $trialEndsAt,
     );
