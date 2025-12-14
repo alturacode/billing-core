@@ -24,7 +24,7 @@ final readonly class BillingManager
     public function __construct(
         private ProductRepository       $products,
         private SubscriptionRepository  $subscriptions,
-        private BillingProviderRegistry $provider,
+        private BillingProviderRegistry $providers,
         private BillableDetailsResolver $billableDetailsResolver
     )
     {
@@ -38,7 +38,7 @@ final readonly class BillingManager
             throw new SubscriptionNotFoundException();
         }
 
-        $gateway = $this->provider->subscriptionProviderFor($subscription->provider()->value());
+        $gateway = $this->providers->get($subscription->provider()->value());
 
         if (!($gateway instanceof SwappableItemPriceBillingProvider)) {
             throw BillingProviderMissingCapabilityException::make(
@@ -76,7 +76,7 @@ final readonly class BillingManager
             throw SubscriptionAlreadyExistsException::forLogicalName($draft->name);
         }
 
-        $gateway = $this->provider->subscriptionProviderFor($draft->provider);
+        $gateway = $this->providers->get($draft->provider);
 
         if ($gateway instanceof CustomerAwareBillingProvider) {
             $billableIdentity = BillableIdentity::fromString($draft->billableType, $draft->billableId);
@@ -114,7 +114,7 @@ final readonly class BillingManager
             throw new SubscriptionNotFoundException();
         }
 
-        $gateway = $this->provider->subscriptionProviderFor($subscription->provider()->value());
+        $gateway = $this->providers->get($subscription->provider()->value());
         $result = $gateway->cancel($subscription, $atPeriodEnd, $providerOptions);
         $this->subscriptions->save($result->subscription);
 
@@ -132,7 +132,7 @@ final readonly class BillingManager
             throw new SubscriptionNotFoundException();
         }
 
-        $gateway = $this->provider->subscriptionProviderFor($subscription->provider()->value());
+        $gateway = $this->providers->get($subscription->provider()->value());
 
         if (!($gateway instanceof PausableBillingProvider)) {
             throw BillingProviderMissingCapabilityException::make(
@@ -158,7 +158,7 @@ final readonly class BillingManager
             throw new SubscriptionNotFoundException();
         }
 
-        $gateway = $this->provider->subscriptionProviderFor($subscription->provider()->value());
+        $gateway = $this->providers->get($subscription->provider()->value());
 
         if (!($gateway instanceof PausableBillingProvider)) {
             throw BillingProviderMissingCapabilityException::make(
@@ -175,7 +175,7 @@ final readonly class BillingManager
 
     public function syncAllProducts(string $provider, array $providerOptions = []): ProductSyncResult
     {
-        $gateway = $this->provider->subscriptionProviderFor($provider);
+        $gateway = $this->providers->get($provider);
 
         if (!($gateway instanceof ProductAwareBillingProvider)) {
             throw BillingProviderMissingCapabilityException::make(
@@ -189,7 +189,7 @@ final readonly class BillingManager
 
     public function syncProductByPriceId(string $provider, string $priceId, array $providerOptions = []): ProductSyncResult
     {
-        $gateway = $this->provider->subscriptionProviderFor($provider);
+        $gateway = $this->providers->get($provider);
 
         if (!($gateway instanceof ProductAwareBillingProvider)) {
             throw BillingProviderMissingCapabilityException::make(

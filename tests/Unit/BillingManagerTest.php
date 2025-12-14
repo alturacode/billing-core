@@ -95,7 +95,7 @@ it('creates a new subscription successfully', function () {
         ->willReturn([$product]);
 
     $this->providerRegistry->expects($this->once())
-        ->method('subscriptionProviderFor')
+        ->method('get')
         ->with('stripe')
         ->willReturn($this->billingProvider);
 
@@ -142,7 +142,7 @@ it('cancels an existing subscription', function () {
         ->willReturn($subscription);
 
     $this->providerRegistry->expects($this->once())
-        ->method('subscriptionProviderFor')
+        ->method('get')
         ->with('stripe')
         ->willReturn($this->billingProvider);
 
@@ -180,7 +180,7 @@ it('pauses an existing subscription', function () {
         ->willReturn($subscription);
 
     $this->providerRegistry->expects($this->once())
-        ->method('subscriptionProviderFor')
+        ->method('get')
         ->with('stripe')
         ->willReturn($pausableBillingProvider);
 
@@ -218,7 +218,7 @@ it('resumes an existing subscription', function () {
         ->willReturn($subscription);
 
     $this->providerRegistry->expects($this->once())
-        ->method('subscriptionProviderFor')
+        ->method('get')
         ->with('stripe')
         ->willReturn($pausableBillingProvider);
 
