@@ -19,9 +19,9 @@ interface ExternalIdMapper
      * @param string $type
      * @param string $provider
      * @param array<string|int> $internalIds
-     * @return array<string|int>
+     * @return array<string|int, string|int|null> - key: internalId, value: externalId
      */
-    public function getExternalIds(string $type, string $provider, array $internalIds): array;
+    public function getExternalIdMap(string $type, string $provider, array $internalIds): array;
 
     public function getInternalId(string $type, string $provider, string|int $externalId): string|int|null;
 
@@ -29,7 +29,7 @@ interface ExternalIdMapper
      * @param string $type
      * @param string $provider
      * @param array<string|int> $externalIds
-     * @return array<string|int>
+     * @return array<string|int, string|int|null> - key: externalId, value: internalId
      */
-    public function getInternalIds(string $type, string $provider, array $externalIds): array;
+    public function getInternalIdMap(string $type, string $provider, array $externalIds): array;
 }
