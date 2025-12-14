@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Provider;
 
+use AlturaCode\Billing\Core\Common\BillableDetails;
+use AlturaCode\Billing\Core\Common\BillableIdentity;
+use AlturaCode\Billing\Core\Products\Product;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItem;
 use RuntimeException;
@@ -14,7 +17,9 @@ use RuntimeException;
 final readonly class SynchronousBillingProvider implements
     BillingProvider,
     SwappableItemPriceBillingProvider,
-    PausableBillingProvider
+    PausableBillingProvider,
+    ProductAwareBillingProvider,
+    CustomerAwareBillingProvider
 {
     public function create(Subscription $subscription, array $options = []): BillingProviderResult
     {
@@ -44,5 +49,26 @@ final readonly class SynchronousBillingProvider implements
     public function resume(Subscription $subscription, array $options): BillingProviderResult
     {
         return BillingProviderResult::completed($subscription->resume());
+    }
+
+    public function syncProduct(Product $product, array $options = []): ProductSyncResult
+    {
+        return ProductSyncResult::completed(1, count($product->prices()));
+    }
+
+    public function syncProducts(array $products, array $options = []): ProductSyncResult
+    {
+        $productCount = count($products);
+        $pricesCount = 0;
+        foreach ($products as $product) {
+            $pricesCount += count($product->prices());
+        }
+
+        return ProductSyncResult::completed($productCount, $pricesCount);
+    }
+
+    public function syncCustomer(BillableIdentity $billable, ?BillableDetails $details = null, array $options = []): CustomerSyncResult
+    {
+        return CustomerSyncResult::completed($billable->id());
     }
 }

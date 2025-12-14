@@ -10,6 +10,8 @@ use AlturaCode\Billing\Core\Products\ProductRepository;
 use AlturaCode\Billing\Core\Provider\BillingProviderRegistry;
 use AlturaCode\Billing\Core\Provider\BillingProviderResult;
 use AlturaCode\Billing\Core\Provider\CustomerAwareBillingProvider;
+use AlturaCode\Billing\Core\Provider\ProductAwareBillingProvider;
+use AlturaCode\Billing\Core\Provider\ProductSyncResult;
 use AlturaCode\Billing\Core\Provider\PausableBillingProvider;
 use AlturaCode\Billing\Core\Provider\SwappableItemPriceBillingProvider;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
@@ -38,7 +40,7 @@ final readonly class BillingManager
 
         $gateway = $this->provider->subscriptionProviderFor($subscription->provider()->value());
 
-        if ($gateway instanceof SwappableItemPriceBillingProvider === false) {
+        if (!($gateway instanceof SwappableItemPriceBillingProvider)) {
             throw BillingProviderMissingCapabilityException::make(
                 provider: $subscription->provider()->value(),
                 capability: SwappableItemPriceBillingProvider::class
@@ -77,10 +79,20 @@ final readonly class BillingManager
         $gateway = $this->provider->subscriptionProviderFor($draft->provider);
 
         if ($gateway instanceof CustomerAwareBillingProvider) {
-            $billableDetails = $this->billableDetailsResolver->resolve($subscription->billable());
+            $billableIdentity = BillableIdentity::fromString($draft->billableType, $draft->billableId);
+            $billableDetails = $this->billableDetailsResolver->resolve($billableIdentity);
             if ($billableDetails) {
-                $gateway->syncCustomer($subscription->billable(), $billableDetails);
+                $gateway->syncCustomer($billableIdentity, $billableDetails);
             }
+        }
+
+        // If the provider supports product sync and draft targets a specific price, ensure the product exists upstream
+        if (($gateway instanceof ProductAwareBillingProvider) && $draft->priceId) {
+            $product = $this->products->findByPriceId(ProductPriceId::fromString($draft->priceId));
+            if ($product === null) {
+                throw new ProductNotFoundException();
+            }
+            $gateway->syncProduct($product, $providerOptions);
         }
 
         $subscription = new SubscriptionFactory()->fromProductListAndDraft($this->products->all(), $draft);
@@ -122,7 +134,7 @@ final readonly class BillingManager
 
         $gateway = $this->provider->subscriptionProviderFor($subscription->provider()->value());
 
-        if ($gateway instanceof PausableBillingProvider === false) {
+        if (!($gateway instanceof PausableBillingProvider)) {
             throw BillingProviderMissingCapabilityException::make(
                 provider: $subscription->provider()->value(),
                 capability: PausableBillingProvider::class
@@ -148,7 +160,7 @@ final readonly class BillingManager
 
         $gateway = $this->provider->subscriptionProviderFor($subscription->provider()->value());
 
-        if ($gateway instanceof PausableBillingProvider === false) {
+        if (!($gateway instanceof PausableBillingProvider)) {
             throw BillingProviderMissingCapabilityException::make(
                 provider: $subscription->provider()->value(),
                 capability: PausableBillingProvider::class
@@ -159,5 +171,39 @@ final readonly class BillingManager
         $this->subscriptions->save($result->subscription);
 
         return $result;
+    }
+
+    public function syncAllProducts(string $provider, array $providerOptions = []): ProductSyncResult
+    {
+        $gateway = $this->provider->subscriptionProviderFor($provider);
+
+        if (!($gateway instanceof ProductAwareBillingProvider)) {
+            throw BillingProviderMissingCapabilityException::make(
+                provider: $provider,
+                capability: ProductAwareBillingProvider::class
+            );
+        }
+
+        return $gateway->syncProducts($this->products->all(), $providerOptions);
+    }
+
+    public function syncProductByPriceId(string $provider, string $priceId, array $providerOptions = []): ProductSyncResult
+    {
+        $gateway = $this->provider->subscriptionProviderFor($provider);
+
+        if (!($gateway instanceof ProductAwareBillingProvider)) {
+            throw BillingProviderMissingCapabilityException::make(
+                provider: $provider,
+                capability: ProductAwareBillingProvider::class
+            );
+        }
+
+        $product = $this->products->findByPriceId(ProductPriceId::fromString($priceId));
+
+        if ($product === null) {
+            throw new ProductNotFoundException();
+        }
+
+        return $gateway->syncProduct($product, $providerOptions);
     }
 }
