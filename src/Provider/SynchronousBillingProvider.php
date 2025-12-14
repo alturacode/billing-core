@@ -53,18 +53,12 @@ final readonly class SynchronousBillingProvider implements
 
     public function syncProduct(Product $product, array $options = []): ProductSyncResult
     {
-        return ProductSyncResult::completed(1, count($product->prices()));
+        return ProductSyncResult::makeEmpty();
     }
 
     public function syncProducts(array $products, array $options = []): ProductSyncResult
     {
-        $productCount = count($products);
-        $pricesCount = 0;
-        foreach ($products as $product) {
-            $pricesCount += count($product->prices());
-        }
-
-        return ProductSyncResult::completed($productCount, $pricesCount);
+        return ProductSyncResult::makeEmpty();
     }
 
     public function syncCustomer(BillableIdentity $billable, ?BillableDetails $details = null, array $options = []): CustomerSyncResult
