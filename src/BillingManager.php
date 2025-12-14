@@ -9,6 +9,7 @@ use AlturaCode\Billing\Core\Products\ProductPriceId;
 use AlturaCode\Billing\Core\Products\ProductRepository;
 use AlturaCode\Billing\Core\Provider\BillingProviderRegistry;
 use AlturaCode\Billing\Core\Provider\BillingProviderResult;
+use AlturaCode\Billing\Core\Provider\CustomerAwareBillingProvider;
 use AlturaCode\Billing\Core\Provider\PausableBillingProvider;
 use AlturaCode\Billing\Core\Provider\SwappableItemPriceBillingProvider;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
@@ -21,7 +22,8 @@ final readonly class BillingManager
     public function __construct(
         private ProductRepository       $products,
         private SubscriptionRepository  $subscriptions,
-        private BillingProviderRegistry $provider
+        private BillingProviderRegistry $provider,
+        private BillableDetailsResolver $billableDetailsResolver
     )
     {
     }
@@ -72,8 +74,16 @@ final readonly class BillingManager
             throw SubscriptionAlreadyExistsException::forLogicalName($draft->name);
         }
 
-        $subscription = new SubscriptionFactory()->fromProductListAndDraft($this->products->all(), $draft);
         $gateway = $this->provider->subscriptionProviderFor($draft->provider);
+
+        if ($gateway instanceof CustomerAwareBillingProvider) {
+            $billableDetails = $this->billableDetailsResolver->resolve($subscription->billable());
+            if ($billableDetails) {
+                $gateway->syncCustomer($subscription->billable(), $billableDetails);
+            }
+        }
+
+        $subscription = new SubscriptionFactory()->fromProductListAndDraft($this->products->all(), $draft);
         $result = $gateway->create($subscription, $providerOptions);
         $this->subscriptions->save($result->subscription);
 
