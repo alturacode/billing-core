@@ -259,6 +259,17 @@ final readonly class Subscription
         return $this->copy(items: $items);
     }
 
+    public function findItem(SubscriptionItemId $subscriptionItemId): SubscriptionItem
+    {
+        foreach ($this->items as $item) {
+            if ($item->id()->equals($subscriptionItemId)) {
+                return $item;
+            }
+        }
+
+        throw new DomainException('Item not found.');
+    }
+
     public function addEntitlementToItem(SubscriptionItem $item, SubscriptionItemEntitlement ...$entitlements): Subscription
     {
         return $this->copy(items: array_map(

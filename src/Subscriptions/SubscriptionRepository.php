@@ -7,6 +7,7 @@ use AlturaCode\Billing\Core\Common\Billable;
 interface SubscriptionRepository
 {
     public function find(SubscriptionId $subscriptionId): ?Subscription;
+    public function findByItemId(SubscriptionItemId $itemId): ?Subscription;
     public function save(Subscription $subscription): void;
     public function findForBillable(
         Billable         $billable,

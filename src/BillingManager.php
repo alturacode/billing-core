@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core;
 
+use AlturaCode\Billing\Core\Products\ProductPriceId;
 use AlturaCode\Billing\Core\Products\ProductRepository;
 use AlturaCode\Billing\Core\Provider\BillingProviderRegistry;
 use AlturaCode\Billing\Core\Provider\BillingProviderResult;
 use AlturaCode\Billing\Core\Common\Billable;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionRepository;
 
@@ -20,6 +22,27 @@ final readonly class BillingManager
         private BillingProviderRegistry $provider
     )
     {
+    }
+
+    public function swapSubscriptionItemPrice(string $subscriptionItemId, string $newPriceId, array $providerOptions = []): BillingProviderResult
+    {
+        $subscription = $this->subscriptions->findByItemId(SubscriptionItemId::fromString($subscriptionItemId));
+        $product = $this->products->findByPriceId(ProductPriceId::fromString($newPriceId));
+
+        if ($subscription === null) {
+            throw new SubscriptionNotFoundException();
+        }
+
+        if ($product === null) {
+            throw new ProductNotFoundException();
+        }
+
+        $subscriptionItem = $subscription->findItem(SubscriptionItemId::fromString($subscriptionItemId));
+        $gateway = $this->provider->subscriptionProviderFor($subscription->provider()->value());
+        $result = $gateway->swapItemPrice($subscription, $subscriptionItem, $newPriceId, $providerOptions);
+        $this->subscriptions->save($result->subscription);
+
+        return $result;
     }
 
     /**
