@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Provider;
 
-use RuntimeException;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItem;
+use RuntimeException;
 
 /**
  * Billing provider that executes all operations synchronously, useful for testing or as a default provider.
  */
-final readonly class SynchronousBillingProvider implements BillingProvider
+final readonly class SynchronousBillingProvider implements
+    BillingProvider,
+    SwappableItemPriceBillingProvider,
+    PausableBillingProvider
 {
     public function create(Subscription $subscription, array $options = []): BillingProviderResult
     {
@@ -20,7 +23,7 @@ final readonly class SynchronousBillingProvider implements BillingProvider
 
     public function swapItemPrice(
         Subscription     $subscription,
-        SubscriptionItem $subscriptionItemId,
+        SubscriptionItem $subscriptionItem,
         string           $newPriceId,
         array            $options = []
     ): BillingProviderResult

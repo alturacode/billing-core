@@ -1,11 +1,13 @@
 <?php
 
+use AlturaCode\Billing\Core\BillableDetailsResolver;
 use AlturaCode\Billing\Core\BillingManager;
 use AlturaCode\Billing\Core\Products\Product;
 use AlturaCode\Billing\Core\Products\ProductRepository;
 use AlturaCode\Billing\Core\Provider\BillingProvider;
 use AlturaCode\Billing\Core\Provider\BillingProviderRegistry;
 use AlturaCode\Billing\Core\Provider\BillingProviderResult;
+use AlturaCode\Billing\Core\Provider\PausableBillingProvider;
 use AlturaCode\Billing\Core\SubscriptionAlreadyExistsException;
 use AlturaCode\Billing\Core\SubscriptionDraft;
 use AlturaCode\Billing\Core\SubscriptionNotFoundException;
@@ -19,11 +21,13 @@ beforeEach(function () {
     $this->subscriptions = $this->createMock(SubscriptionRepository::class);
     $this->providerRegistry = $this->createMock(BillingProviderRegistry::class);
     $this->billingProvider = $this->createMock(BillingProvider::class);
+    $this->billingDetailsResolver = $this->createMock(BillableDetailsResolver::class);
 
     $this->manager = new BillingManager(
         $this->products,
         $this->subscriptions,
-        $this->providerRegistry
+        $this->providerRegistry,
+        $this->billingDetailsResolver
     );
 });
 
@@ -62,8 +66,8 @@ it('creates a new subscription successfully', function () {
         name: 'default',
         billableId: 'user_1',
         billableType: 'user',
-        priceId: $priceId,
-        provider: 'stripe'
+        provider: 'stripe',
+        priceId: $priceId
     );
 
     $product = Product::hydrate([
@@ -115,8 +119,8 @@ it('throws exception if subscription already exists and is active when creating'
         name: 'default',
         billableId: 'user_1',
         billableType: 'user',
-        priceId: $priceId,
-        provider: 'stripe'
+        provider: 'stripe',
+        priceId: $priceId
     );
 
     $existingSubscription = hydrateSubscription('active');
@@ -169,6 +173,7 @@ it('throws exception if subscription not found when canceling', function () {
 it('pauses an existing subscription', function () {
     $subId = (string)new Ulid();
     $subscription = hydrateSubscription('active');
+    $pausableBillingProvider = $this->createMock(PausableBillingProvider::class);
 
     $this->subscriptions->expects($this->once())
         ->method('find')
@@ -177,9 +182,9 @@ it('pauses an existing subscription', function () {
     $this->providerRegistry->expects($this->once())
         ->method('subscriptionProviderFor')
         ->with('stripe')
-        ->willReturn($this->billingProvider);
+        ->willReturn($pausableBillingProvider);
 
-    $this->billingProvider->expects($this->once())
+    $pausableBillingProvider->expects($this->once())
         ->method('pause')
         ->with($subscription, [])
         ->willReturn(BillingProviderResult::completed($subscription));
@@ -206,6 +211,7 @@ it('throws exception if subscription not found when pausing', function () {
 it('resumes an existing subscription', function () {
     $subId = (string)new Ulid();
     $subscription = hydrateSubscription('paused');
+    $pausableBillingProvider = $this->createMock(PausableBillingProvider::class);
 
     $this->subscriptions->expects($this->once())
         ->method('find')
@@ -214,9 +220,9 @@ it('resumes an existing subscription', function () {
     $this->providerRegistry->expects($this->once())
         ->method('subscriptionProviderFor')
         ->with('stripe')
-        ->willReturn($this->billingProvider);
+        ->willReturn($pausableBillingProvider);
 
-    $this->billingProvider->expects($this->once())
+    $pausableBillingProvider->expects($this->once())
         ->method('resume')
         ->with($subscription, [])
         ->willReturn(BillingProviderResult::completed($subscription));
