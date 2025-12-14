@@ -7,28 +7,16 @@ namespace AlturaCode\Billing\Core\Provider;
 final readonly class CustomerSyncResult
 {
     private function __construct(
-        private CustomerSyncResultStatus $status,
-        private ?string                  $providerCustomerId,
-        private array                    $metadata,
+        private ?string $providerCustomerId,
+        private array   $metadata,
     )
     {
     }
 
     /** @param array<string, mixed> $metadata */
-    public static function success(string $providerCustomerId, array $metadata = []): self
+    public static function completed(string $providerCustomerId, array $metadata = []): self
     {
-        return new self(CustomerSyncResultStatus::Success, $providerCustomerId, $metadata);
-    }
-
-    /** @param array<string, mixed> $metadata */
-    public static function failed(array $metadata = []): self
-    {
-        return new self(CustomerSyncResultStatus::Failed, null, $metadata);
-    }
-
-    public function status(): CustomerSyncResultStatus
-    {
-        return $this->status;
+        return new self($providerCustomerId, $metadata);
     }
 
     public function providerCustomerId(): ?string
@@ -40,10 +28,5 @@ final readonly class CustomerSyncResult
     public function metadata(): array
     {
         return $this->metadata;
-    }
-
-    public function isSuccessful(): bool
-    {
-        return $this->status === CustomerSyncResultStatus::Success;
     }
 }
