@@ -7,19 +7,19 @@ namespace AlturaCode\Billing\Core\Provider;
 final readonly class CustomerSyncResult
 {
     private function __construct(
-        private ?string $providerCustomerId,
-        private array   $metadata,
+        private string|int|null $providerCustomerId,
+        private array           $metadata,
     )
     {
     }
 
-    /** @param array<string, mixed> $metadata */
-    public static function completed(string $providerCustomerId, array $metadata = []): self
+    /** @param array<string|int, mixed> $metadata */
+    public static function completed(string|int $providerCustomerId, array $metadata = []): self
     {
         return new self($providerCustomerId, $metadata);
     }
 
-    public function providerCustomerId(): ?string
+    public function providerCustomerId(): string|int|null
     {
         return $this->providerCustomerId;
     }
