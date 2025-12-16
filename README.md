@@ -116,7 +116,8 @@ These model monetary values and currencies. Prices on products are expressed wit
 
 ### Billable
 
-- `AlturaCode\Billing\Core\Common\Billable` — polymorphic-style identifier of your customer in your own system
+- `AlturaCode\Billing\Core\Common\BillableIdentity` — polymorphic-style identifier of your customer in your own system
+- `AlturaCode\Billing\Core\Common\BillableDetails` — a description of your customer in your own system, this is used to pass customer details to the provider
 
 ### Products & Prices
 
