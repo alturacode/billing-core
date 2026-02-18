@@ -33,12 +33,12 @@ function makeMoney(int $amount = 1000, string $currency = 'usd'): Money {
     return Money::hydrate(['amount' => $amount, 'currency' => $currency]);
 }
 
-function makeItem(string $currency = 'usd', ?SubscriptionItemId $id = null, int $quantity = 1): SubscriptionItem {
+function makeItem(string $currency = 'usd', ?SubscriptionItemId $id = null, int $quantity = 1, int $price = 1000): SubscriptionItem {
     return SubscriptionItem::create(
         id: $id ?? SubscriptionItemId::generate(),
         priceId: ProductPriceId::generate(),
         quantity: $quantity,
-        price: makeMoney(1000, $currency),
+        price: makeMoney($price, $currency),
         interval: ProductPriceInterval::monthly()
     );
 }
@@ -52,7 +52,8 @@ it('creates an incomplete subscription without items', function () {
         ->and($subscription->entitlements())->toBeArray()->toHaveCount(0)
         ->and($subscription->cancelAtPeriodEnd())->toBeFalse()
         ->and($subscription->trialEndsAt())->toBeNull()
-        ->and($subscription->canceledAt())->toBeNull();
+        ->and($subscription->canceledAt())->toBeNull()
+        ->and($subscription->isFree())->toBeFalse();
 });
 
 it('adds a primary item and retrieves primary and addon items', function () {
@@ -68,7 +69,8 @@ it('adds a primary item and retrieves primary and addon items', function () {
         ->and($subscription->primaryItem())->toBe($primary)
         ->and($subscription->addonItems())->toHaveCount(1)
         ->and($subscription->addonItems()[0])->toBe($addon)
-        ->and($subscription->hasItem($primary->id()))->toBeTrue();
+        ->and($subscription->hasItem($primary->id()))->toBeTrue()
+        ->and($subscription->isFree())->toBeFalse();
 });
 
 it('changes the primary item when provided id exists', function () {
@@ -233,3 +235,9 @@ it('does not allow duplicate item ids', function () {
     $subscription->withItems($itemA, $itemB);
 })->throws(DomainException::class);
 
+it('determines whether subscription is free based on items', function () {
+    $subscription = makeSubscription();
+    $freeItem = makeItem(price: 0);
+    $subscription = $subscription->withPrimaryItem($freeItem);
+    expect($subscription->isFree())->toBeTrue();
+});

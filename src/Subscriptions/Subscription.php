@@ -191,6 +191,15 @@ final readonly class Subscription
         return $this->status === SubscriptionStatus::Incomplete;
     }
 
+    public function isFree(): bool
+    {
+        if (empty($this->items)) {
+            return false;
+        }
+
+        return array_all($this->items, fn(SubscriptionItem $item) => $item->price()->amount() === 0);
+    }
+
     public function hasItem(SubscriptionItemId $itemId): bool
     {
         return array_any($this->items, fn(SubscriptionItem $item) => $item->id()->equals($itemId));
