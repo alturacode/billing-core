@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Provider;
 
+/**
+ * @codeCoverageIgnore
+ */
 final class MemoryExternalIdMapper implements ExternalIdMapper
 {
     public function __construct(

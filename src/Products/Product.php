@@ -22,7 +22,6 @@ final readonly class Product
         private array       $features
     )
     {
-        $this->assertValid();
     }
 
     public static function hydrate(array $data): self
@@ -128,22 +127,5 @@ final readonly class Product
             $from->count(),
             $currency->code()
         ));
-    }
-
-    private function assertValid(): void
-    {
-        // assert prices are an instance of PlanPrice
-        foreach ($this->prices as $price) {
-            if (!$price instanceof ProductPrice) {
-                throw new InvalidArgumentException('Plan prices must be instances of PlanPrice');
-            }
-        }
-
-        // assert features are an instance of PlanFeature
-        foreach ($this->features as $feature) {
-            if (!$feature instanceof ProductFeature) {
-                throw new InvalidArgumentException('Plan features must be instances of PlanFeature');
-            }
-        }
     }
 }

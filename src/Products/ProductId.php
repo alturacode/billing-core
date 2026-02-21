@@ -35,7 +35,7 @@ final readonly class ProductId implements Stringable
 
     public function equals(ProductId $other): bool
     {
-        return $this->value->equals($other->value());
+        return $this->value->equals($other->value);
     }
 
     public function __toString(): string

@@ -13,6 +13,8 @@ use RuntimeException;
 
 /**
  * Billing provider that executes all operations synchronously, useful for testing or as a default provider.
+ *
+ * @codeCoverageIgnore
  */
 final readonly class SynchronousBillingProvider implements
     BillingProvider,
