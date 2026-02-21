@@ -35,7 +35,7 @@ final readonly class SubscriptionItemId implements Stringable
 
     public function equals(SubscriptionItemId $other): bool
     {
-        return $this->value === $other->value;
+        return $this->value() === $other->value();
     }
 
     public function __toString(): string

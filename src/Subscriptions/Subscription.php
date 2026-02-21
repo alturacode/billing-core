@@ -211,7 +211,7 @@ final readonly class Subscription
         DateTimeImmutable  $currentPeriodEndsAt
     ): Subscription
     {
-        if (array_any($this->items, fn($item) => $item->id()->equals($itemId))) {
+        if (array_any($this->items, fn(SubscriptionItem $item) => $item->id()->equals($itemId))) {
             return $this->copy(items: array_map(
                 fn(SubscriptionItem $item) => $item->id()->equals($itemId)
                     ? $item->withPeriodDates($currentPeriodStartsAt, $currentPeriodEndsAt)
