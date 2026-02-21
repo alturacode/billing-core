@@ -97,6 +97,45 @@ it('adds entitlements', function () {
     expect($subscription->entitlements())->toHaveCount(1);
 });
 
+it('can be hydrated', function () {
+    $id = SubscriptionId::generate();
+    $itemId = SubscriptionItemId::generate();
+    $priceId = \AlturaCode\Billing\Core\Products\ProductPriceId::generate();
+    
+    $data = [
+        'id' => (string) $id,
+        'billable' => ['type' => 'user', 'id' => 1],
+        'provider' => 'stripe',
+        'name' => 'main',
+        'status' => 'active',
+        'items' => [
+            [
+                'id' => (string) $itemId,
+                'price_id' => (string) $priceId,
+                'quantity' => 1,
+                'price' => ['amount' => 1000, 'currency' => 'usd'],
+                'interval' => ['type' => 'month', 'count' => 1],
+                'entitlements' => []
+            ]
+        ],
+        'primary_item_id' => (string) $itemId,
+        'created_at' => '2023-01-01 00:00:00',
+        'cancel_at_period_end' => false,
+        'trial_ends_at' => null,
+        'canceled_at' => null,
+    ];
+
+    $subscription = Subscription::hydrate($data);
+
+    expect($subscription->id()->value())->toBe((string) $id)
+        ->and($subscription->billable()->type())->toBe('user')
+        ->and($subscription->provider()->value())->toBe('stripe')
+        ->and($subscription->name()->value())->toBe('main')
+        ->and($subscription->status())->toBe(SubscriptionStatus::Active)
+        ->and($subscription->items())->toHaveCount(1)
+        ->and($subscription->primaryItem()->id()->value())->toBe((string) $itemId);
+});
+
 it('throws when setting primary item to a non-existing item', function () {
     $subscription = makeSubscription();
     $one = makeItem('usd');

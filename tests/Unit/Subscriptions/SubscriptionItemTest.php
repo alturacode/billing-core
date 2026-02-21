@@ -145,3 +145,41 @@ it('hydrates successfully with valid dates', function () {
         ->and($item->currentPeriodStartsAt()?->format('Y-m-d H:i:s'))->toBe($startStr)
         ->and($item->currentPeriodEndsAt()?->format('Y-m-d H:i:s'))->toBe($endStr);
 });
+
+it('throws on repeated entitlements', function () {
+    $entitlement = \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement::create(
+        id: \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId::generate(),
+        key: \AlturaCode\Billing\Core\Common\FeatureKey::fromString('feature'),
+        value: \AlturaCode\Billing\Core\Common\FeatureValue::flagOn(),
+    );
+
+    SubscriptionItem::create(
+        id: SubscriptionItemId::generate(),
+        priceId: \AlturaCode\Billing\Core\Products\ProductPriceId::generate(),
+        quantity: 1,
+        price: Money::hydrate(['amount' => 1000, 'currency' => 'usd']),
+        interval: \AlturaCode\Billing\Core\Products\ProductPriceInterval::monthly(),
+        entitlements: [$entitlement, $entitlement]
+    );
+})->throws(DomainException::class, 'Subscription entitlements must be unique.');
+
+it('can change entitlements', function () {
+    $item = SubscriptionItem::create(
+        id: SubscriptionItemId::generate(),
+        priceId: \AlturaCode\Billing\Core\Products\ProductPriceId::generate(),
+        quantity: 1,
+        price: Money::hydrate(['amount' => 1000, 'currency' => 'usd']),
+        interval: \AlturaCode\Billing\Core\Products\ProductPriceInterval::monthly(),
+        entitlements: []
+    );
+
+    $entitlement = \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement::create(
+        id: \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId::generate(),
+        key: \AlturaCode\Billing\Core\Common\FeatureKey::fromString('feature'),
+        value: \AlturaCode\Billing\Core\Common\FeatureValue::flagOn(),
+    );
+
+    $newItem = $item->withEntitlements($entitlement);
+    expect($newItem->entitlements())->toHaveCount(1)
+        ->and($newItem->entitlements()[0])->toBe($entitlement);
+});

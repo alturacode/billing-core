@@ -6,6 +6,7 @@ use AlturaCode\Billing\Core\Products\ProductId;
 use AlturaCode\Billing\Core\Products\ProductKind;
 use AlturaCode\Billing\Core\Products\ProductPrice;
 use AlturaCode\Billing\Core\Products\ProductPriceId;
+use AlturaCode\Billing\Core\Products\ProductSlug;
 
 /**
  * Helpers
@@ -151,3 +152,40 @@ it('finds a price by id and throws when not found', function () {
 
     $product->findPrice(ProductPriceId::generate());
 })->throws(RuntimeException::class);
+
+it('finds price by interval and currency', function () {
+    $p1 = makePrice(amount: 1000, currency: 'usd', intervalType: 'month', intervalCount: 1);
+    $p2 = makePrice(amount: 10000, currency: 'usd', intervalType: 'year', intervalCount: 1);
+    $product = makeProduct()->withPrices($p1, $p2);
+
+    $interval = \AlturaCode\Billing\Core\Products\ProductPriceInterval::monthly();
+    $currency = \AlturaCode\Billing\Core\Common\Currency::usd();
+
+    expect($product->hasPriceWithIntervalAndCurrency($interval, $currency))->toBeTrue()
+        ->and($product->findPriceForIntervalAndCurrency($interval, $currency))->toBe($p1);
+
+    $yearly = \AlturaCode\Billing\Core\Products\ProductPriceInterval::yearly();
+    expect($product->findPriceForIntervalAndCurrency($yearly, $currency))->toBe($p2);
+});
+
+it('throws when price with interval and currency not found', function () {
+    $product = makeProduct();
+    $interval = \AlturaCode\Billing\Core\Products\ProductPriceInterval::monthly();
+    $currency = \AlturaCode\Billing\Core\Common\Currency::usd();
+
+    $product->findPriceForIntervalAndCurrency($interval, $currency);
+})->throws(RuntimeException::class);
+
+it('can be created using create method', function () {
+    $id = ProductId::generate();
+    $slug = ProductSlug::fromString('basic');
+    $product = Product::create($id, ProductKind::Plan, $slug, 'Name', 'Desc');
+
+    expect($product->id())->toBe($id)
+        ->and($product->kind())->toBe(ProductKind::Plan)
+        ->and($product->slug())->toBe($slug)
+        ->and($product->name())->toBe('Name')
+        ->and($product->description())->toBe('Desc')
+        ->and($product->prices())->toBe([])
+        ->and($product->features())->toBe([]);
+});

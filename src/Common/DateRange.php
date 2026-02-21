@@ -24,6 +24,14 @@ final readonly class DateRange
         }
     }
     
+    public static function from(
+        ?DateTimeImmutable $start = null,
+        ?DateTimeImmutable $end = null
+    ): self
+    {
+        return new self($start, $end);
+    }
+
     public static function hydrate(array $data): self
     {
         return new self(
