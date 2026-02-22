@@ -11,24 +11,37 @@ final readonly class FeatureValue
 {
     private function __construct(
         private FeatureKind     $kind,
-        private bool|string|int $value
+        private bool|string|int $value,
+        private ?UsagePolicy    $usagePolicy = null
     )
     {
         $this->assertValuePresent();
         $this->assertValueIsValidForKind();
+        $this->assertUsagePolicyValidForKind();
     }
 
     public static function hydrate(mixed $data): self
     {
+        $kind = FeatureKind::from($data['kind']);
+        $usagePolicy = null;
+
+        if (isset($data['usage_policy'])) {
+            $usagePolicy = UsagePolicy::hydrate($data['usage_policy']);
+        } elseif ($kind === FeatureKind::Limit) {
+            // Default to calendar month for limits if no policy specified
+            $usagePolicy = UsagePolicy::calendarMonth();
+        }
+
         return new self(
-            FeatureKind::from($data['kind']),
-            $data['value']
+            $kind,
+            $data['value'],
+            $usagePolicy
         );
     }
 
-    public static function create(FeatureKind $kind, bool|string|int $value): self
+    public static function create(FeatureKind $kind, bool|string|int $value, ?UsagePolicy $usagePolicy = null): self
     {
-        return new self($kind, $value);
+        return new self($kind, $value, $usagePolicy);
     }
 
     public static function flagOn(): self
@@ -41,9 +54,11 @@ final readonly class FeatureValue
         return new self(FeatureKind::Flag, false);
     }
 
-    public static function limit(int $value): self
+    public static function limit(int $value, ?UsagePolicy $usagePolicy = null): self
     {
-        return new self(FeatureKind::Limit, $value);
+        // Default to calendar month if no policy specified for limits
+        $policy = $usagePolicy ?? UsagePolicy::calendarMonth();
+        return new self(FeatureKind::Limit, $value, $policy);
     }
 
     public function value(): bool|string|int
@@ -55,6 +70,16 @@ final readonly class FeatureValue
     {
         if ($this->kind !== $other->kind) {
             throw new LogicException('Cannot combine FeatureValues with different kinds');
+        }
+
+        // For limits, ensure usage policies match
+        if ($this->kind === FeatureKind::Limit) {
+            if ($this->usagePolicy === null || $other->usagePolicy === null) {
+                throw new LogicException('Cannot combine limit FeatureValues without usage policies');
+            }
+            if (!$this->usagePolicy->equals($other->usagePolicy)) {
+                throw new LogicException('Cannot combine limit FeatureValues with different usage policies');
+            }
         }
 
         // If values are the same, return the original value
@@ -69,16 +94,21 @@ final readonly class FeatureValue
 
         // If a limit and one of the values is unlimited, return unlimited
         if ($this->kind === FeatureKind::Limit && $this->isUnlimited() || $other->isUnlimited()) {
-            return new self($this->kind, 'unlimited');
+            return new self($this->kind, 'unlimited', $this->usagePolicy);
         }
 
         // Otherwise, sum the values
-        return new self($this->kind, $this->value + $other->value);
+        return new self($this->kind, $this->value + $other->value, $this->usagePolicy);
     }
 
     public function kind(): FeatureKind
     {
         return $this->kind;
+    }
+
+    public function usagePolicy(): ?UsagePolicy
+    {
+        return $this->usagePolicy;
     }
 
     public function isOn(): bool
@@ -135,6 +165,14 @@ final readonly class FeatureValue
 
         if (is_numeric($this->value) && $this->value < 0) {
             throw new InvalidArgumentException('Feature value cannot be negative');
+        }
+    }
+
+    private function assertUsagePolicyValidForKind(): void
+    {
+        // Flags should not have usage policies
+        if ($this->kind === FeatureKind::Flag && $this->usagePolicy !== null) {
+            throw new LogicException('Flag features cannot have usage policies');
         }
     }
 }

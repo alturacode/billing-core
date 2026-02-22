@@ -139,6 +139,8 @@ You are free to map these to your own product tables, configuration files, or ex
 Located under `AlturaCode\Billing\Core\Features`:
 
 - `Feature` — a capability your subscription unlocks (for example, `projects`, `seats`, `storage_gb`)
+- `UsagePolicy` — defines how usage is tracked and reset for limit-based features. By default, limits use a `calendarMonth` policy.
+- `UsageRepository` — abstraction that you implement to track and persist feature usage
 
 Features are associated with products via `ProductFeature`.
 
@@ -186,20 +188,36 @@ It exposes high-level methods:
 
 This is the main entry point most applications and framework adapters use.
 
-### EntitlementCheckerFactory
+### Entitlement Checking
 
-`EntitlementCheckerFactory` is a factory for `EntitlementChecker` instances that can be used to check if a given feature can be used or consumed.
+The package provides a `UsageAwareEntitlementChecker` (created via `UsageAwareEntitlementCheckerFactory`) to check and consume feature usage.
 
 ```php
-use AlturaCode\Billing\Core\EntitlementCheckerFactory;
+use AlturaCode\Billing\Core\UsageAwareEntitlementCheckerFactory;
 use AlturaCode\Billing\Core\EntitlementResolver;
+use AlturaCode\Billing\Core\Common\UsageWindowCalculator;
 
-$factory = new EntitlementCheckerFactory(new EntitlementResolver());
+$factory = new UsageAwareEntitlementCheckerFactory(
+    new EntitlementResolver(),
+    new DatabaseUsageRepository(), // Your implementation
+    new UsageWindowCalculator()
+);
 
 $now = new \DateTimeImmutable();
-$checker = $factory->create($subscription, $now); // AlturaCode\Billing\Core\EntitlementChecker
-$checker->canUse('projects', 3); // true or false
+$checker = $factory->create($subscription, $now);
+
+// Check if a feature can be used (non-atomic, for UI/display)
+if ($checker->canUse('projects', 1)) {
+    // ...
+}
+
+// Atomically consume a feature (for authoritative enforcement)
+if ($checker->tryConsume('projects', 1)) {
+    // Action allowed and usage recorded
+}
 ```
+
+For simple checks without usage tracking, you can use the basic `EntitlementCheckerFactory`.
 
 ---
 
@@ -209,7 +227,7 @@ Below is a minimal pure-PHP setup. In a real app, you would wire this via a cont
 
 ### 1. Implement the Repositories
 
-You must implement `ProductRepository` and `SubscriptionRepository`. A basic example might look like:
+You must implement `ProductRepository`, `SubscriptionRepository`, and `UsageRepository`. A basic example might look like:
 
 ```php
 use AlturaCode\Billing\Core\Products\ProductRepository;
@@ -253,6 +271,30 @@ final class DatabaseSubscriptionRepository implements SubscriptionRepository
     public function save(Subscription $subscription): void
     {
         // Insert or update
+    }
+}
+```
+
+`UsageRepository` tracks feature usage for a given window (for example, a calendar month).
+
+```php
+use AlturaCode\Billing\Core\Features\UsageRepository;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
+use AlturaCode\Billing\Core\Common\FeatureKey;
+use AlturaCode\Billing\Core\Common\UsageWindow;
+
+final class DatabaseUsageRepository implements UsageRepository
+{
+    public function getUsedAmount(SubscriptionId $subscriptionId, FeatureKey $featureKey, UsageWindow $window): int
+    {
+        // Return used amount from your DB for the given window
+    }
+
+    public function tryConsume(SubscriptionId $subscriptionId, FeatureKey $featureKey, UsageWindow $window, int $amount, int $limit): bool
+    {
+        // Atomically attempt to consume $amount.
+        // Ensure that (current usage + $amount) <= $limit.
+        // Return true on success, false otherwise.
     }
 }
 ```
