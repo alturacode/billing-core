@@ -73,6 +73,51 @@ final class InMemoryUsageRepository implements UsageRepository
         );
     }
 
+    public function setUsedAmount(
+        SubscriptionId $subscriptionId,
+        FeatureKey $featureKey,
+        UsageWindow $window,
+        int $amount
+    ): void {
+        if ($amount < 0) {
+            throw new \InvalidArgumentException('Amount cannot be negative');
+        }
+
+        $key = $this->makeKey($subscriptionId, $featureKey, $window);
+        $this->usage[$key] = $amount;
+    }
+
+    public function incrementUsage(
+        SubscriptionId $subscriptionId,
+        FeatureKey $featureKey,
+        UsageWindow $window,
+        int $amount
+    ): void {
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException('Amount must be positive');
+        }
+
+        $key = $this->makeKey($subscriptionId, $featureKey, $window);
+        $current = $this->usage[$key] ?? 0;
+        $this->usage[$key] = $current + $amount;
+    }
+
+    public function decrementUsage(
+        SubscriptionId $subscriptionId,
+        FeatureKey $featureKey,
+        UsageWindow $window,
+        int $amount
+    ): void {
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException('Amount must be positive');
+        }
+
+        $key = $this->makeKey($subscriptionId, $featureKey, $window);
+        $current = $this->usage[$key] ?? 0;
+        $newValue = max(0, $current - $amount); // Don't go negative
+        $this->usage[$key] = $newValue;
+    }
+
     /**
      * Clear all usage data (useful for tests).
      */

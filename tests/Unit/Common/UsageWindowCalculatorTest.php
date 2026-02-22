@@ -94,3 +94,34 @@ it('ensures consecutive months have non-overlapping windows', function () {
         ->toBe($marWindow->startsAt()->format('Y-m-d H:i:s'))
         ->toBe('2026-03-01 00:00:00');
 });
+
+it('calculates perpetual window that never expires', function () {
+    $calculator = new UsageWindowCalculator();
+    $policy = UsagePolicy::perpetual();
+
+    $at = new DateTimeImmutable('2026-02-15 12:00:00', new DateTimeZone('UTC'));
+    $window = $calculator->forPolicyAt($policy, $at);
+
+    expect($window->startsAt()->format('Y-m-d H:i:s'))->toBe('1970-01-01 00:00:00')
+        ->and($window->endsAt()->format('Y-m-d H:i:s'))->toBe('9999-12-31 23:59:59');
+});
+
+it('returns same perpetual window regardless of time', function () {
+    $calculator = new UsageWindowCalculator();
+    $policy = UsagePolicy::perpetual();
+
+    $time1 = new DateTimeImmutable('2026-01-01 00:00:00', new DateTimeZone('UTC'));
+    $window1 = $calculator->forPolicyAt($policy, $time1);
+
+    $time2 = new DateTimeImmutable('2030-12-31 23:59:59', new DateTimeZone('UTC'));
+    $window2 = $calculator->forPolicyAt($policy, $time2);
+
+    // Both windows should be identical
+    expect($window1->startsAt()->format('Y-m-d H:i:s'))
+        ->toBe($window2->startsAt()->format('Y-m-d H:i:s'))
+        ->toBe('1970-01-01 00:00:00');
+
+    expect($window1->endsAt()->format('Y-m-d H:i:s'))
+        ->toBe($window2->endsAt()->format('Y-m-d H:i:s'))
+        ->toBe('9999-12-31 23:59:59');
+});

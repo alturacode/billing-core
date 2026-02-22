@@ -50,4 +50,61 @@ interface UsageRepository
         int $amount,
         int $limit
     ): bool;
+
+    /**
+     * Set the used amount directly for a subscription's feature.
+     *
+     * This is useful for perpetual limits where you want to set an exact value
+     * (e.g., after recounting resources).
+     *
+     * @param SubscriptionId $subscriptionId The subscription identifier
+     * @param FeatureKey $featureKey The feature key
+     * @param UsageWindow $window The usage window
+     * @param int $amount The amount to set (must be non-negative)
+     * @return void
+     */
+    public function setUsedAmount(
+        SubscriptionId $subscriptionId,
+        FeatureKey $featureKey,
+        UsageWindow $window,
+        int $amount
+    ): void;
+
+    /**
+     * Increment the used amount by a specific value.
+     *
+     * This is useful for perpetual limits when creating a resource
+     * (e.g., creating a website increments the "websites" counter).
+     *
+     * @param SubscriptionId $subscriptionId The subscription identifier
+     * @param FeatureKey $featureKey The feature key
+     * @param UsageWindow $window The usage window
+     * @param int $amount The amount to increment by (must be positive)
+     * @return void
+     */
+    public function incrementUsage(
+        SubscriptionId $subscriptionId,
+        FeatureKey $featureKey,
+        UsageWindow $window,
+        int $amount
+    ): void;
+
+    /**
+     * Decrement the used amount by a specific value.
+     *
+     * This is useful for perpetual limits when deleting a resource
+     * (e.g., deleting a website decrements the "websites" counter).
+     *
+     * @param SubscriptionId $subscriptionId The subscription identifier
+     * @param FeatureKey $featureKey The feature key
+     * @param UsageWindow $window The usage window
+     * @param int $amount The amount to decrement by (must be positive)
+     * @return void
+     */
+    public function decrementUsage(
+        SubscriptionId $subscriptionId,
+        FeatureKey $featureKey,
+        UsageWindow $window,
+        int $amount
+    ): void;
 }

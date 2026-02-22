@@ -28,6 +28,11 @@ final readonly class UsagePolicy
         return new self(UsagePeriod::Month);
     }
 
+    public static function perpetual(): self
+    {
+        return new self(UsagePeriod::Perpetual);
+    }
+
     public function period(): UsagePeriod
     {
         return $this->period;

@@ -126,6 +126,132 @@ final readonly class UsageAwareEntitlementChecker
         );
     }
 
+    /**
+     * Set the used amount directly for a perpetual limit feature.
+     *
+     * This is useful when you want to set an exact count (e.g., after recounting resources).
+     * Only works with perpetual limits.
+     *
+     * @param string $keyName The feature key name
+     * @param int $amount The amount to set (must be non-negative)
+     * @param DateTimeImmutable|null $at The time reference (default: now in UTC)
+     * @return void
+     */
+    public function setUsedAmount(string $keyName, int $amount, ?DateTimeImmutable $at = null): void
+    {
+        $at = $at ?? new DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $key = FeatureKey::fromString($keyName);
+        $effectiveEntitlement = $this->effectiveEntitlements[$key->value()] ?? null;
+
+        if ($effectiveEntitlement === null) {
+            return;
+        }
+
+        $value = $effectiveEntitlement->value();
+
+        if ($value->kind() !== FeatureKind::Limit) {
+            return;
+        }
+
+        $usagePolicy = $value->usagePolicy();
+        if ($usagePolicy === null) {
+            return;
+        }
+
+        $window = $this->windowCalculator->forPolicyAt($usagePolicy, $at);
+
+        $this->usageRepository->setUsedAmount(
+            $this->subscriptionId,
+            $key,
+            $window,
+            $amount
+        );
+    }
+
+    /**
+     * Increment the usage for a perpetual limit feature.
+     *
+     * This is useful when creating a resource (e.g., creating a website increments the counter).
+     * Works with any limit type, but especially useful for perpetual limits.
+     *
+     * @param string $keyName The feature key name
+     * @param int $amount The amount to increment by (must be positive, default: 1)
+     * @param DateTimeImmutable|null $at The time reference (default: now in UTC)
+     * @return void
+     */
+    public function incrementUsage(string $keyName, int $amount = 1, ?DateTimeImmutable $at = null): void
+    {
+        $at = $at ?? new DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $key = FeatureKey::fromString($keyName);
+        $effectiveEntitlement = $this->effectiveEntitlements[$key->value()] ?? null;
+
+        if ($effectiveEntitlement === null) {
+            return;
+        }
+
+        $value = $effectiveEntitlement->value();
+
+        if ($value->kind() !== FeatureKind::Limit) {
+            return;
+        }
+
+        $usagePolicy = $value->usagePolicy();
+        if ($usagePolicy === null) {
+            return;
+        }
+
+        $window = $this->windowCalculator->forPolicyAt($usagePolicy, $at);
+
+        $this->usageRepository->incrementUsage(
+            $this->subscriptionId,
+            $key,
+            $window,
+            $amount
+        );
+    }
+
+    /**
+     * Decrement the usage for a perpetual limit feature.
+     *
+     * This is useful when deleting a resource (e.g., deleting a website decrements the counter).
+     * Works with any limit type, but especially useful for perpetual limits.
+     *
+     * @param string $keyName The feature key name
+     * @param int $amount The amount to decrement by (must be positive, default: 1)
+     * @param DateTimeImmutable|null $at The time reference (default: now in UTC)
+     * @return void
+     */
+    public function decrementUsage(string $keyName, int $amount = 1, ?DateTimeImmutable $at = null): void
+    {
+        $at = $at ?? new DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $key = FeatureKey::fromString($keyName);
+        $effectiveEntitlement = $this->effectiveEntitlements[$key->value()] ?? null;
+
+        if ($effectiveEntitlement === null) {
+            return;
+        }
+
+        $value = $effectiveEntitlement->value();
+
+        if ($value->kind() !== FeatureKind::Limit) {
+            return;
+        }
+
+        $usagePolicy = $value->usagePolicy();
+        if ($usagePolicy === null) {
+            return;
+        }
+
+        $window = $this->windowCalculator->forPolicyAt($usagePolicy, $at);
+
+        $this->usageRepository->decrementUsage(
+            $this->subscriptionId,
+            $key,
+            $window,
+            $amount
+        );
+    }
+
     private function tryConsumeLimit(
         FeatureKey $key,
         \AlturaCode\Billing\Core\Common\FeatureValue $value,

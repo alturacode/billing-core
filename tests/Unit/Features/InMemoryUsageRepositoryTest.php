@@ -171,3 +171,96 @@ it('clears all usage data', function () {
     // Usage should be zero
     expect($this->repository->getUsedAmount($this->subscriptionId, $this->featureKey, $window))->toBe(0);
 });
+
+it('sets used amount directly', function () {
+    $at = new DateTimeImmutable('2026-02-15 12:00:00', new DateTimeZone('UTC'));
+    $window = $this->calculator->forPolicyAt($this->policy, $at);
+
+    // Set to 50
+    $this->repository->setUsedAmount($this->subscriptionId, $this->featureKey, $window, 50);
+    expect($this->repository->getUsedAmount($this->subscriptionId, $this->featureKey, $window))->toBe(50);
+
+    // Set to 100
+    $this->repository->setUsedAmount($this->subscriptionId, $this->featureKey, $window, 100);
+    expect($this->repository->getUsedAmount($this->subscriptionId, $this->featureKey, $window))->toBe(100);
+
+    // Set back to 0
+    $this->repository->setUsedAmount($this->subscriptionId, $this->featureKey, $window, 0);
+    expect($this->repository->getUsedAmount($this->subscriptionId, $this->featureKey, $window))->toBe(0);
+});
+
+it('throws when setting negative amount', function () {
+    $at = new DateTimeImmutable('2026-02-15 12:00:00', new DateTimeZone('UTC'));
+    $window = $this->calculator->forPolicyAt($this->policy, $at);
+
+    $this->repository->setUsedAmount($this->subscriptionId, $this->featureKey, $window, -1);
+})->throws(InvalidArgumentException::class);
+
+it('increments usage by amount', function () {
+    $at = new DateTimeImmutable('2026-02-15 12:00:00', new DateTimeZone('UTC'));
+    $window = $this->calculator->forPolicyAt($this->policy, $at);
+
+    // Start at 0
+    expect($this->repository->getUsedAmount($this->subscriptionId, $this->featureKey, $window))->toBe(0);
+
+    // Increment by 1
+    $this->repository->incrementUsage($this->subscriptionId, $this->featureKey, $window, 1);
+    expect($this->repository->getUsedAmount($this->subscriptionId, $this->featureKey, $window))->toBe(1);
+
+    // Increment by 5
+    $this->repository->incrementUsage($this->subscriptionId, $this->featureKey, $window, 5);
+    expect($this->repository->getUsedAmount($this->subscriptionId, $this->featureKey, $window))->toBe(6);
+
+    // Increment by 10
+    $this->repository->incrementUsage($this->subscriptionId, $this->featureKey, $window, 10);
+    expect($this->repository->getUsedAmount($this->subscriptionId, $this->featureKey, $window))->toBe(16);
+});
+
+it('throws when incrementing by zero or negative', function () {
+    $at = new DateTimeImmutable('2026-02-15 12:00:00', new DateTimeZone('UTC'));
+    $window = $this->calculator->forPolicyAt($this->policy, $at);
+
+    $this->repository->incrementUsage($this->subscriptionId, $this->featureKey, $window, 0);
+})->throws(InvalidArgumentException::class);
+
+it('decrements usage by amount', function () {
+    $at = new DateTimeImmutable('2026-02-15 12:00:00', new DateTimeZone('UTC'));
+    $window = $this->calculator->forPolicyAt($this->policy, $at);
+
+    // Set to 10
+    $this->repository->setUsedAmount($this->subscriptionId, $this->featureKey, $window, 10);
+    expect($this->repository->getUsedAmount($this->subscriptionId, $this->featureKey, $window))->toBe(10);
+
+    // Decrement by 3
+    $this->repository->decrementUsage($this->subscriptionId, $this->featureKey, $window, 3);
+    expect($this->repository->getUsedAmount($this->subscriptionId, $this->featureKey, $window))->toBe(7);
+
+    // Decrement by 5
+    $this->repository->decrementUsage($this->subscriptionId, $this->featureKey, $window, 5);
+    expect($this->repository->getUsedAmount($this->subscriptionId, $this->featureKey, $window))->toBe(2);
+
+    // Decrement by 2
+    $this->repository->decrementUsage($this->subscriptionId, $this->featureKey, $window, 2);
+    expect($this->repository->getUsedAmount($this->subscriptionId, $this->featureKey, $window))->toBe(0);
+});
+
+it('does not go negative when decrementing', function () {
+    $at = new DateTimeImmutable('2026-02-15 12:00:00', new DateTimeZone('UTC'));
+    $window = $this->calculator->forPolicyAt($this->policy, $at);
+
+    // Set to 5
+    $this->repository->setUsedAmount($this->subscriptionId, $this->featureKey, $window, 5);
+
+    // Try to decrement by 10 (more than current)
+    $this->repository->decrementUsage($this->subscriptionId, $this->featureKey, $window, 10);
+
+    // Should be 0, not negative
+    expect($this->repository->getUsedAmount($this->subscriptionId, $this->featureKey, $window))->toBe(0);
+});
+
+it('throws when decrementing by zero or negative', function () {
+    $at = new DateTimeImmutable('2026-02-15 12:00:00', new DateTimeZone('UTC'));
+    $window = $this->calculator->forPolicyAt($this->policy, $at);
+
+    $this->repository->decrementUsage($this->subscriptionId, $this->featureKey, $window, 0);
+})->throws(InvalidArgumentException::class);
