@@ -25,8 +25,8 @@ final readonly class FeatureValue
         $kind = FeatureKind::from($data['kind']);
         $usagePolicy = null;
 
-        if (isset($data['usage_policy'])) {
-            $usagePolicy = UsagePolicy::hydrate($data['usage_policy']);
+        if (isset($data['usagePolicy'])) {
+            $usagePolicy = UsagePolicy::hydrate($data['usagePolicy']);
         } elseif ($kind === FeatureKind::Limit) {
             // Default to calendar month for limits if no policy specified
             $usagePolicy = UsagePolicy::calendarMonth();
