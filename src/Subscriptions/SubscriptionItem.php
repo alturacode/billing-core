@@ -126,6 +126,20 @@ final readonly class SubscriptionItem
         );
     }
 
+    public function withPrice(ProductPriceId $priceId, Money $price, ProductPriceInterval $interval, array $entitlements): self
+    {
+        return new self(
+            id: $this->id,
+            priceId: $priceId,
+            quantity: $this->quantity,
+            price: $price,
+            interval: $interval,
+            entitlements: $entitlements,
+            currentPeriodStartsAt: $this->currentPeriodStartsAt,
+            currentPeriodEndsAt: $this->currentPeriodEndsAt
+        );
+    }
+
     public function withPeriodDates(DateTimeImmutable $currentPeriodStartsAt, DateTimeImmutable $currentPeriodEndsAt): self
     {
         return new self(

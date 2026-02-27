@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AlturaCode\Billing\Core\Subscriptions;
 
 use AlturaCode\Billing\Core\Common\BillableIdentity;
+use AlturaCode\Billing\Core\Common\Money;
+use AlturaCode\Billing\Core\Products\ProductPriceId;
+use AlturaCode\Billing\Core\Products\ProductPriceInterval;
 use DateTimeImmutable;
 use DomainException;
 
@@ -164,6 +167,20 @@ final readonly class Subscription
         }
 
         throw new DomainException('Cannot change quantity of item that is not part of the subscription.');
+    }
+
+    public function changeItemPrice(SubscriptionItemId $itemId, ProductPriceId $priceId, Money $price, ProductPriceInterval $interval, array $entitlements): Subscription
+    {
+        if (array_any($this->items, fn(SubscriptionItem $item) => $item->id()->equals($itemId))) {
+            return $this->copy(items: array_map(
+                fn(SubscriptionItem $item) => $item->id()->equals($itemId)
+                    ? $item->withPrice($priceId, $price, $interval, $entitlements)
+                    : $item,
+                $this->items
+            ));
+        }
+
+        throw new DomainException('Cannot change price of item that is not part of the subscription.');
     }
 
     public function isInTrial(DateTimeImmutable $now): bool
