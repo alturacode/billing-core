@@ -11,7 +11,7 @@ This package contains the **core billing domain and orchestration logic**:
 
 Framework-specific integrations (for example, Laravel) and concrete billing providers (for example, Stripe) live in **separate packages**, such as:
 
-- `alturacode/billing-stripe` — Stripe provider implementation (in progress)
+- `alturacode/billing-stripe` — [Stripe provider](https://github.com/alturacode/billing-stripe)
 - `alturacode/billing-paypal` — Stripe provider implementation (planned)
 - `alturacode/billing-laravel` — [Laravel adapter](https://github.com/alturacode/billing-laravel)
 
