@@ -64,7 +64,6 @@ final readonly class SynchronousBillingProvider implements
                 $subscriptionItem->id(),
                 $newPriceId,
                 $price->price(),
-                $price->interval(),
                 $entitlements
             )
         );

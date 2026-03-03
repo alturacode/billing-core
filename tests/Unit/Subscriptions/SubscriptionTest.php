@@ -1,9 +1,9 @@
 <?php
 
+use AlturaCode\Billing\Core\Common\BillableIdentity;
 use AlturaCode\Billing\Core\Common\FeatureKey;
 use AlturaCode\Billing\Core\Common\FeatureValue;
 use AlturaCode\Billing\Core\Common\Money;
-use AlturaCode\Billing\Core\Common\BillableIdentity;
 use AlturaCode\Billing\Core\Products\ProductPriceId;
 use AlturaCode\Billing\Core\Products\ProductPriceInterval;
 use AlturaCode\Billing\Core\Subscriptions\Subscription;
@@ -143,6 +143,36 @@ it('throws when setting primary item to a non-existing item', function () {
 
     $unknownId = SubscriptionItemId::generate();
     $subscription->changePrimaryItem($unknownId);
+})->throws(DomainException::class);
+
+it('changes the price of an existing item', function () {
+    $subscription = makeSubscription();
+    $primaryItem = makeItem('usd');
+    $subscription = $subscription->withPrimaryItem($primaryItem);
+
+    $newPriceId = ProductPriceId::generate();
+    $newPrice = makeMoney(1500, 'usd');
+    $newEntitlements = [];
+
+    $subscription = $subscription->changeItemPrice($primaryItem->id(), $newPriceId, $newPrice, $newEntitlements);
+
+    $updatedItem = $subscription->primaryItem();
+    expect($updatedItem->priceId())->toBe($newPriceId)
+        ->and($updatedItem->price())->toBe($newPrice)
+        ->and($updatedItem->entitlements())->toBe($newEntitlements);
+});
+
+it('throws when changing the price of a non-existing item', function () {
+    $subscription = makeSubscription();
+    $primaryItem = makeItem('usd');
+    $subscription = $subscription->withPrimaryItem($primaryItem);
+
+    $nonExistentItemId = SubscriptionItemId::generate();
+    $newPriceId = ProductPriceId::generate();
+    $newPrice = makeMoney(1500, 'usd');
+    $newEntitlements = [];
+
+    $subscription->changeItemPrice($nonExistentItemId, $newPriceId, $newPrice, $newEntitlements);
 })->throws(DomainException::class);
 
 it('throws when trying to get primary item when none is set', function () {

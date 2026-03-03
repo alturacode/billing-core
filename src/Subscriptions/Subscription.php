@@ -169,12 +169,12 @@ final readonly class Subscription
         throw new DomainException('Cannot change quantity of item that is not part of the subscription.');
     }
 
-    public function changeItemPrice(SubscriptionItemId $itemId, ProductPriceId $priceId, Money $price, ProductPriceInterval $interval, array $entitlements): Subscription
+    public function changeItemPrice(SubscriptionItemId $itemId, ProductPriceId $priceId, Money $price, array $entitlements): Subscription
     {
         if (array_any($this->items, fn(SubscriptionItem $item) => $item->id()->equals($itemId))) {
             return $this->copy(items: array_map(
                 fn(SubscriptionItem $item) => $item->id()->equals($itemId)
-                    ? $item->withPrice($priceId, $price, $interval, $entitlements)
+                    ? $item->withPrice($priceId, $price, $item->interval(), $entitlements)
                     : $item,
                 $this->items
             ));
