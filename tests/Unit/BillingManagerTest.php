@@ -167,6 +167,44 @@ it('cancels an existing subscription', function () {
     expect($result)->toBeInstanceOf(BillingProviderResult::class);
 });
 
+it('undoes cancellation of an existing subscription', function () {
+    $subId = (string)new Ulid();
+    $subscription = hydrateSubscription('active');
+
+    $this->subscriptions->expects($this->once())
+        ->method('find')
+        ->with($this->callback(fn($arg) => $arg instanceof SubscriptionId && $arg->value() === $subId))
+        ->willReturn($subscription);
+
+    $this->providerRegistry->expects($this->once())
+        ->method('get')
+        ->with('stripe')
+        ->willReturn($this->billingProvider);
+
+    $this->billingProvider->expects($this->once())
+        ->method('doNotCancel')
+        ->with($subscription, [])
+        ->willReturn(BillingProviderResult::completed($subscription));
+
+    $this->subscriptions->expects($this->once())
+        ->method('save')
+        ->with($subscription);
+
+    $result = $this->manager->doNotCancelSubscription($subId);
+
+    expect($result)->toBeInstanceOf(BillingProviderResult::class);
+});
+
+it('throws exception if subscription not found when undoing cancellation', function () {
+    $subId = (string)new Ulid();
+
+    $this->subscriptions->expects($this->once())
+        ->method('find')
+        ->willReturn(null);
+
+    $this->manager->doNotCancelSubscription($subId);
+})->throws(SubscriptionNotFoundException::class);
+
 it('throws exception if subscription not found when canceling', function () {
     $subId = (string)new Ulid();
 

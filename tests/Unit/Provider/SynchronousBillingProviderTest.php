@@ -136,3 +136,40 @@ it('swaps an item price and updates entitlements', function () {
         ->and($updatedItem->entitlements()[0]->key()->value())->toBe('posts')
         ->and($updatedItem->entitlements()[0]->value()->value())->toBe(10);
 });
+
+it('undoes cancellation', function () {
+    // Arrange
+    $productRepository = $this->createMock(ProductRepository::class);
+    $provider = new SynchronousBillingProvider($productRepository);
+
+    $subscriptionId = SubscriptionId::generate();
+    $billable = BillableIdentity::fromString('user', '1');
+    $subscriptionName = SubscriptionName::fromString('main');
+    $subscriptionProvider = SubscriptionProvider::fromString('test');
+
+    $priceId = ProductPriceId::generate();
+
+    $item = SubscriptionItem::create(
+        id: SubscriptionItemId::generate(),
+        priceId: $priceId,
+        quantity: 1,
+        price: Money::hydrate(['amount' => 1000, 'currency' => 'usd']),
+        interval: ProductPriceInterval::monthly(),
+    );
+
+    $subscription = Subscription::create(
+        $subscriptionId,
+        $subscriptionName,
+        $billable,
+        $subscriptionProvider,
+        null
+    )->withPrimaryItem($item)->activate();
+
+    $subscription = $subscription->cancel(); // at period end
+
+    // Act
+    $result = $provider->doNotCancel($subscription, []);
+
+    // Assert
+    expect($result->subscription->cancelAtPeriodEnd())->toBeFalse();
+});

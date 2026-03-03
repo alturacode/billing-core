@@ -8,4 +8,5 @@ interface BillingProvider
 {
     public function create(Subscription $subscription, array $options = []): BillingProviderResult;
     public function cancel(Subscription $subscription, bool $atPeriodEnd, array $options): BillingProviderResult;
+    public function doNotCancel(Subscription $subscription, array $options): BillingProviderResult;
 }

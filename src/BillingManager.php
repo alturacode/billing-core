@@ -121,6 +121,24 @@ final readonly class BillingManager
         return $result;
     }
 
+    public function doNotCancelSubscription(
+        string $subscriptionId,
+        array  $providerOptions = []
+    ): BillingProviderResult
+    {
+        $subscription = $this->subscriptions->find(SubscriptionId::fromString($subscriptionId));
+
+        if ($subscription === null) {
+            throw new SubscriptionNotFoundException();
+        }
+
+        $gateway = $this->providers->get($subscription->provider()->value());
+        $result = $gateway->doNotCancel($subscription, $providerOptions);
+        $this->subscriptions->save($result->subscription);
+
+        return $result;
+    }
+
     public function pauseSubscription(
         string $subscriptionId,
         array  $providerOptions = []

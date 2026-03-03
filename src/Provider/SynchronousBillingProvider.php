@@ -74,6 +74,11 @@ final readonly class SynchronousBillingProvider implements
         return BillingProviderResult::completed($subscription->cancel($atPeriodEnd));
     }
 
+    public function doNotCancel(Subscription $subscription, array $options): BillingProviderResult
+    {
+        return BillingProviderResult::completed($subscription->doNotCancel());
+    }
+
     public function pause(Subscription $subscription, array $options): BillingProviderResult
     {
         return BillingProviderResult::completed($subscription->pause());
