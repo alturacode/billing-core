@@ -198,6 +198,11 @@ final readonly class Subscription
         return $this->status === SubscriptionStatus::Canceled;
     }
 
+    public function isPendingCancellation(): bool
+    {
+        return $this->cancelAtPeriodEnd;
+    }
+
     public function isPaused(): bool
     {
         return $this->status === SubscriptionStatus::Paused;
@@ -252,6 +257,19 @@ final readonly class Subscription
             cancelAtPeriodEnd: $atPeriodEnd,
             canceledAt: $atPeriodEnd ? null : new DateTimeImmutable(),
         );
+    }
+
+    public function doNotCancel(): Subscription
+    {
+        if ($this->isCanceled()) {
+            throw new DomainException('Cannot undo cancellation of a canceled subscription.');
+        }
+
+        if (!$this->cancelAtPeriodEnd) {
+            throw new DomainException('Subscription is not scheduled for cancellation.');
+        }
+
+        return $this->copy(cancelAtPeriodEnd: false);
     }
 
     public function pause(): Subscription

@@ -310,3 +310,41 @@ it('determines whether subscription is free based on items', function () {
     $subscription = $subscription->withPrimaryItem($freeItem);
     expect($subscription->isFree())->toBeTrue();
 });
+
+it('isPendingCancellation returns true if scheduled for cancellation', function () {
+    $subscription = makeSubscription()->withPrimaryItem(makeItem('usd'))->activate();
+    $subscription = $subscription->cancel(); // at period end by default
+
+    expect($subscription->isPendingCancellation())->toBeTrue();
+});
+
+it('isPendingCancellation returns false if not scheduled for cancellation', function () {
+    $subscription = makeSubscription()->withPrimaryItem(makeItem('usd'))->activate();
+
+    expect($subscription->isPendingCancellation())->toBeFalse();
+});
+
+it('doNotCancel prevents cancellation at period end', function () {
+    $subscription = makeSubscription()->withPrimaryItem(makeItem('usd'))->activate();
+    $subscription = $subscription->cancel(); // at period end by default
+
+    expect($subscription->isPendingCancellation())->toBeTrue();
+
+    $subscription = $subscription->doNotCancel();
+
+    expect($subscription->isPendingCancellation())->toBeFalse()
+        ->and($subscription->cancelAtPeriodEnd())->toBeFalse();
+});
+
+it('doNotCancel throws exception if subscription is already canceled', function () {
+    $subscription = makeSubscription()->withPrimaryItem(makeItem('usd'))->activate();
+    $subscription = $subscription->cancel(false); // cancel immediately
+
+    $subscription->doNotCancel();
+})->throws(DomainException::class, 'Cannot undo cancellation of a canceled subscription.');
+
+it('doNotCancel throws exception if subscription is not scheduled for cancellation', function () {
+    $subscription = makeSubscription()->withPrimaryItem(makeItem('usd'))->activate();
+
+    $subscription->doNotCancel();
+})->throws(DomainException::class, 'Subscription is not scheduled for cancellation.');
