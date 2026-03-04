@@ -24,7 +24,7 @@ final readonly class UsageAwareEntitlementCheckerFactory
             $this->entitlementResolver->resolve($subscription->entitlements(), $at),
             $this->usageRepository,
             $this->windowCalculator,
-            $subscription->id()
+            $subscription->billable()
         );
     }
 }

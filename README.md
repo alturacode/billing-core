@@ -279,18 +279,18 @@ final class DatabaseSubscriptionRepository implements SubscriptionRepository
 
 ```php
 use AlturaCode\Billing\Core\Features\UsageRepository;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
+use AlturaCode\Billing\Core\Common\BillableIdentity;
 use AlturaCode\Billing\Core\Common\FeatureKey;
 use AlturaCode\Billing\Core\Common\UsageWindow;
 
 final class DatabaseUsageRepository implements UsageRepository
 {
-    public function getUsedAmount(SubscriptionId $subscriptionId, FeatureKey $featureKey, UsageWindow $window): int
+    public function getUsedAmount(BillableIdentity $billable, FeatureKey $featureKey, UsageWindow $window): int
     {
         // Return used amount from your DB for the given window
     }
 
-    public function tryConsume(SubscriptionId $subscriptionId, FeatureKey $featureKey, UsageWindow $window, int $amount, int $limit): bool
+    public function tryConsume(BillableIdentity $billable, FeatureKey $featureKey, UsageWindow $window, int $amount, int $limit): bool
     {
         // Atomically attempt to consume $amount.
         // Ensure that (current usage + $amount) <= $limit.

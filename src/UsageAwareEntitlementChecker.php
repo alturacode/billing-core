@@ -6,9 +6,9 @@ namespace AlturaCode\Billing\Core;
 
 use AlturaCode\Billing\Core\Common\FeatureKey;
 use AlturaCode\Billing\Core\Common\FeatureKind;
+use AlturaCode\Billing\Core\Common\BillableIdentity;
 use AlturaCode\Billing\Core\Common\UsageWindowCalculator;
 use AlturaCode\Billing\Core\Features\UsageRepository;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 use DateTimeImmutable;
 
 final readonly class UsageAwareEntitlementChecker
@@ -20,7 +20,7 @@ final readonly class UsageAwareEntitlementChecker
         private array                  $effectiveEntitlements,
         private UsageRepository        $usageRepository,
         private UsageWindowCalculator  $windowCalculator,
-        private SubscriptionId         $subscriptionId,
+        private BillableIdentity       $billable,
     ) {
     }
 
@@ -120,7 +120,7 @@ final readonly class UsageAwareEntitlementChecker
         $window = $this->windowCalculator->forPolicyAt($usagePolicy, $at);
 
         return $this->usageRepository->getUsedAmount(
-            $this->subscriptionId,
+            $this->billable,
             $key,
             $window
         );
@@ -161,7 +161,7 @@ final readonly class UsageAwareEntitlementChecker
         $window = $this->windowCalculator->forPolicyAt($usagePolicy, $at);
 
         $this->usageRepository->setUsedAmount(
-            $this->subscriptionId,
+            $this->billable,
             $key,
             $window,
             $amount
@@ -203,7 +203,7 @@ final readonly class UsageAwareEntitlementChecker
         $window = $this->windowCalculator->forPolicyAt($usagePolicy, $at);
 
         $this->usageRepository->incrementUsage(
-            $this->subscriptionId,
+            $this->billable,
             $key,
             $window,
             $amount
@@ -245,7 +245,7 @@ final readonly class UsageAwareEntitlementChecker
         $window = $this->windowCalculator->forPolicyAt($usagePolicy, $at);
 
         $this->usageRepository->decrementUsage(
-            $this->subscriptionId,
+            $this->billable,
             $key,
             $window,
             $amount
@@ -273,7 +273,7 @@ final readonly class UsageAwareEntitlementChecker
         $limit = (int) $value->value();
 
         return $this->usageRepository->tryConsume(
-            $this->subscriptionId,
+            $this->billable,
             $key,
             $window,
             $amount,
@@ -300,7 +300,7 @@ final readonly class UsageAwareEntitlementChecker
 
         $window = $this->windowCalculator->forPolicyAt($usagePolicy, $at);
         $currentUsage = $this->usageRepository->getUsedAmount(
-            $this->subscriptionId,
+            $this->billable,
             $key,
             $window
         );

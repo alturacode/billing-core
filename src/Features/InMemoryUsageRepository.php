@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Features;
 
+use AlturaCode\Billing\Core\Common\BillableIdentity;
 use AlturaCode\Billing\Core\Common\FeatureKey;
 use AlturaCode\Billing\Core\Common\UsageWindow;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 
 /**
  * In-memory implementation of UsageRepository for testing.
@@ -23,16 +23,16 @@ final class InMemoryUsageRepository implements UsageRepository
     private array $usage = [];
 
     public function getUsedAmount(
-        SubscriptionId $subscriptionId,
+        BillableIdentity $billable,
         FeatureKey $featureKey,
         UsageWindow $window
     ): int {
-        $key = $this->makeKey($subscriptionId, $featureKey, $window);
+        $key = $this->makeKey($billable, $featureKey, $window);
         return $this->usage[$key] ?? 0;
     }
 
     public function tryConsume(
-        SubscriptionId $subscriptionId,
+        BillableIdentity $billable,
         FeatureKey $featureKey,
         UsageWindow $window,
         int $amount,
@@ -42,7 +42,7 @@ final class InMemoryUsageRepository implements UsageRepository
             return false;
         }
 
-        $key = $this->makeKey($subscriptionId, $featureKey, $window);
+        $key = $this->makeKey($billable, $featureKey, $window);
         $current = $this->usage[$key] ?? 0;
 
         // Check if adding this amount would exceed the limit
@@ -60,13 +60,14 @@ final class InMemoryUsageRepository implements UsageRepository
      * Create a unique key for storing usage data.
      */
     private function makeKey(
-        SubscriptionId $subscriptionId,
+        BillableIdentity $billable,
         FeatureKey $featureKey,
         UsageWindow $window
     ): string {
         return sprintf(
-            '%s:%s:%s:%s',
-            $subscriptionId->value(),
+            '%s:%s:%s:%s:%s',
+            $billable->type(),
+            (string) $billable->id(),
             $featureKey->value(),
             $window->startsAt()->format('Y-m-d\TH:i:s\Z'),
             $window->endsAt()->format('Y-m-d\TH:i:s\Z')
@@ -74,7 +75,7 @@ final class InMemoryUsageRepository implements UsageRepository
     }
 
     public function setUsedAmount(
-        SubscriptionId $subscriptionId,
+        BillableIdentity $billable,
         FeatureKey $featureKey,
         UsageWindow $window,
         int $amount
@@ -83,12 +84,12 @@ final class InMemoryUsageRepository implements UsageRepository
             throw new \InvalidArgumentException('Amount cannot be negative');
         }
 
-        $key = $this->makeKey($subscriptionId, $featureKey, $window);
+        $key = $this->makeKey($billable, $featureKey, $window);
         $this->usage[$key] = $amount;
     }
 
     public function incrementUsage(
-        SubscriptionId $subscriptionId,
+        BillableIdentity $billable,
         FeatureKey $featureKey,
         UsageWindow $window,
         int $amount
@@ -97,13 +98,13 @@ final class InMemoryUsageRepository implements UsageRepository
             throw new \InvalidArgumentException('Amount must be positive');
         }
 
-        $key = $this->makeKey($subscriptionId, $featureKey, $window);
+        $key = $this->makeKey($billable, $featureKey, $window);
         $current = $this->usage[$key] ?? 0;
         $this->usage[$key] = $current + $amount;
     }
 
     public function decrementUsage(
-        SubscriptionId $subscriptionId,
+        BillableIdentity $billable,
         FeatureKey $featureKey,
         UsageWindow $window,
         int $amount
@@ -112,7 +113,7 @@ final class InMemoryUsageRepository implements UsageRepository
             throw new \InvalidArgumentException('Amount must be positive');
         }
 
-        $key = $this->makeKey($subscriptionId, $featureKey, $window);
+        $key = $this->makeKey($billable, $featureKey, $window);
         $current = $this->usage[$key] ?? 0;
         $newValue = max(0, $current - $amount); // Don't go negative
         $this->usage[$key] = $newValue;

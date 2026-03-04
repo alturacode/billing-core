@@ -1,18 +1,18 @@
 <?php
 
+use AlturaCode\Billing\Core\Common\BillableIdentity;
 use AlturaCode\Billing\Core\Common\FeatureKey;
 use AlturaCode\Billing\Core\Common\FeatureValue;
 use AlturaCode\Billing\Core\Common\UsagePolicy;
 use AlturaCode\Billing\Core\Common\UsageWindowCalculator;
 use AlturaCode\Billing\Core\EffectiveEntitlement;
 use AlturaCode\Billing\Core\Features\InMemoryUsageRepository;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 use AlturaCode\Billing\Core\UsageAwareEntitlementChecker;
 
 beforeEach(function () {
     $this->repository = new InMemoryUsageRepository();
     $this->calculator = new UsageWindowCalculator();
-    $this->subscriptionId = SubscriptionId::generate();
+    $this->billable = BillableIdentity::fromString('user', 123);
 });
 
 it('enforces perpetual limits with tryConsume', function () {
@@ -33,7 +33,7 @@ it('enforces perpetual limits with tryConsume', function () {
         $entitlements,
         $this->repository,
         $this->calculator,
-        $this->subscriptionId
+        $this->billable
     );
 
     // Should be able to consume up to 3
@@ -69,7 +69,7 @@ it('increments usage for perpetual limits', function () {
         $entitlements,
         $this->repository,
         $this->calculator,
-        $this->subscriptionId
+        $this->billable
     );
 
     // Increment by 1 (creating first website)
@@ -99,7 +99,7 @@ it('decrements usage for perpetual limits', function () {
         $entitlements,
         $this->repository,
         $this->calculator,
-        $this->subscriptionId
+        $this->billable
     );
 
     // Create 3 websites
@@ -139,7 +139,7 @@ it('sets usage amount directly for perpetual limits', function () {
         $entitlements,
         $this->repository,
         $this->calculator,
-        $this->subscriptionId
+        $this->billable
     );
 
     // Set to 2 (after recounting)
@@ -172,7 +172,7 @@ it('perpetual limits do not reset across different times', function () {
         $entitlements,
         $this->repository,
         $this->calculator,
-        $this->subscriptionId
+        $this->billable
     );
 
     // Create 3 websites in January
@@ -217,7 +217,7 @@ it('combines perpetual limits with tryConsume and manual adjustments', function 
         $entitlements,
         $this->repository,
         $this->calculator,
-        $this->subscriptionId
+        $this->billable
     );
 
     // Use tryConsume to check and consume

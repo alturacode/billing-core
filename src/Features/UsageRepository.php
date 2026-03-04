@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core\Features;
 
+use AlturaCode\Billing\Core\Common\BillableIdentity;
 use AlturaCode\Billing\Core\Common\FeatureKey;
 use AlturaCode\Billing\Core\Common\UsageWindow;
-use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 
 /**
  * Repository interface for tracking feature usage.
@@ -17,15 +17,15 @@ use AlturaCode\Billing\Core\Subscriptions\SubscriptionId;
 interface UsageRepository
 {
     /**
-     * Get the current used amount for a subscription's feature within a usage window.
+     * Get the current used amount for a billable's feature within a usage window.
      *
-     * @param SubscriptionId $subscriptionId The subscription identifier
+     * @param BillableIdentity $billable The billable identity
      * @param FeatureKey $featureKey The feature key
      * @param UsageWindow $window The usage window to query
      * @return int The amount currently used (0 if no usage recorded)
      */
     public function getUsedAmount(
-        SubscriptionId $subscriptionId,
+        BillableIdentity $billable,
         FeatureKey $featureKey,
         UsageWindow $window
     ): int;
@@ -36,7 +36,7 @@ interface UsageRepository
      * This operation must be atomic: it checks if usage + amount <= limit,
      * and only increments usage if the limit is not exceeded.
      *
-     * @param SubscriptionId $subscriptionId The subscription identifier
+     * @param BillableIdentity $billable The billable identity
      * @param FeatureKey $featureKey The feature key
      * @param UsageWindow $window The usage window
      * @param int $amount The amount to consume (must be positive)
@@ -44,7 +44,7 @@ interface UsageRepository
      * @return bool True if consumption succeeded, false if limit would be exceeded
      */
     public function tryConsume(
-        SubscriptionId $subscriptionId,
+        BillableIdentity $billable,
         FeatureKey $featureKey,
         UsageWindow $window,
         int $amount,
@@ -52,19 +52,19 @@ interface UsageRepository
     ): bool;
 
     /**
-     * Set the used amount directly for a subscription's feature.
+     * Set the used amount directly for a billable's feature.
      *
      * This is useful for perpetual limits where you want to set an exact value
      * (e.g., after recounting resources).
      *
-     * @param SubscriptionId $subscriptionId The subscription identifier
+     * @param BillableIdentity $billable The billable identity
      * @param FeatureKey $featureKey The feature key
      * @param UsageWindow $window The usage window
      * @param int $amount The amount to set (must be non-negative)
      * @return void
      */
     public function setUsedAmount(
-        SubscriptionId $subscriptionId,
+        BillableIdentity $billable,
         FeatureKey $featureKey,
         UsageWindow $window,
         int $amount
@@ -76,14 +76,14 @@ interface UsageRepository
      * This is useful for perpetual limits when creating a resource
      * (e.g., creating a website increments the "websites" counter).
      *
-     * @param SubscriptionId $subscriptionId The subscription identifier
+     * @param BillableIdentity $billable The billable identity
      * @param FeatureKey $featureKey The feature key
      * @param UsageWindow $window The usage window
      * @param int $amount The amount to increment by (must be positive)
      * @return void
      */
     public function incrementUsage(
-        SubscriptionId $subscriptionId,
+        BillableIdentity $billable,
         FeatureKey $featureKey,
         UsageWindow $window,
         int $amount
@@ -95,14 +95,14 @@ interface UsageRepository
      * This is useful for perpetual limits when deleting a resource
      * (e.g., deleting a website decrements the "websites" counter).
      *
-     * @param SubscriptionId $subscriptionId The subscription identifier
+     * @param BillableIdentity $billable The billable identity
      * @param FeatureKey $featureKey The feature key
      * @param UsageWindow $window The usage window
      * @param int $amount The amount to decrement by (must be positive)
      * @return void
      */
     public function decrementUsage(
-        SubscriptionId $subscriptionId,
+        BillableIdentity $billable,
         FeatureKey $featureKey,
         UsageWindow $window,
         int $amount
