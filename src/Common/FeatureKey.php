@@ -13,8 +13,10 @@ final readonly class FeatureKey implements Stringable
         private string $value
     )
     {
-        if (!preg_match('/^[a-z0-9_]+$/', $this->value)) {
-            throw new InvalidArgumentException('Feature key should only contain lowercase letters, numbers and underscores');
+        if (! preg_match('/^[a-z0-9_]+(?:\.[a-z0-9_]+)*$/', $this->value)) {
+            throw new InvalidArgumentException(
+                'Feature key should only contain lowercase letters, numbers, underscores, and dots between namespaces',
+            );
         }
     }
 

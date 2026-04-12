@@ -17,7 +17,7 @@ it('can be hydrated', function () {
 
 it('validates format', function () {
     FeatureKey::fromString('Feature-Key');
-})->throws(InvalidArgumentException::class, 'Feature key should only contain lowercase letters, numbers and underscores');
+})->throws(InvalidArgumentException::class, 'Feature key should only contain lowercase letters, numbers, underscores, and dots between namespaces');
 
 it('can check equality', function () {
     $key1 = FeatureKey::fromString('key_1');
