@@ -23,12 +23,15 @@ it('creates values via helpers', function () {
     $on = FeatureValue::flagOn();
     $off = FeatureValue::flagOff();
     $limit = FeatureValue::limit(5);
+    $unlimited = FeatureValue::unlimited();
 
     expect($on->kind())->toBe(FeatureKind::Flag)
         ->and($on->isOn())->toBeTrue()
         ->and($off->isOff())->toBeTrue()
         ->and($limit->kind())->toBe(FeatureKind::Limit)
-        ->and($limit->value())->toBe(5);
+        ->and($limit->value())->toBe(5)
+        ->and($unlimited->kind())->toBe(FeatureKind::Limit)
+        ->and($unlimited->isUnlimited())->toBeTrue();
 });
 
 it('combines flag values correctly', function () {

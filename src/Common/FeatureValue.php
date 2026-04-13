@@ -61,6 +61,11 @@ final readonly class FeatureValue
         return new self(FeatureKind::Limit, $value, $policy);
     }
 
+    public static function unlimited(?UsagePolicy $usagePolicy = null): self
+    {
+        return new self(FeatureKind::Limit, 'unlimited', $usagePolicy);
+    }
+
     public function value(): bool|string|int
     {
         return $this->value;
