@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core;
 
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionTrialPolicy;
 use DateTimeImmutable;
 
 final class SubscriptionDraft
@@ -21,6 +22,7 @@ final class SubscriptionDraft
         public ?string            $currency = null,
         public ?DateTimeImmutable $trialEndsAt = null,
         public array              $addons = [],
+        public ?SubscriptionTrialPolicy $trialPolicy = null,
     )
     {
     }

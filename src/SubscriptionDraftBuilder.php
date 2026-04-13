@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AlturaCode\Billing\Core;
 
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionTrialMissingPaymentMethodBehavior;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionTrialPaymentMethodCollection;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionTrialPolicy;
 use DateInterval;
 use DateMalformedStringException;
 use DateTimeImmutable;
@@ -22,6 +25,7 @@ final class SubscriptionDraftBuilder
     private int $quantity = 1;
     private ?DateTimeImmutable $trialEndsAt = null;
     private array $addons = [];
+    private ?SubscriptionTrialPolicy $trialPolicy = null;
 
     public function withName(string $name): self
     {
@@ -64,6 +68,64 @@ final class SubscriptionDraftBuilder
         return $this;
     }
 
+    public function withTrialPolicy(?SubscriptionTrialPolicy $trialPolicy): self
+    {
+        $this->trialPolicy = $trialPolicy;
+        return $this;
+    }
+
+    public function withTrialPaymentMethodCollection(SubscriptionTrialPaymentMethodCollection $paymentMethodCollection): self
+    {
+        $this->trialPolicy = SubscriptionTrialPolicy::create(
+            paymentMethodCollection: $paymentMethodCollection,
+            missingPaymentMethodBehavior: $this->trialPolicy?->missingPaymentMethodBehavior(),
+        );
+
+        return $this;
+    }
+
+    public function withTrialRequiresPaymentMethodOnStart(bool $requiresPaymentMethodOnStart): self
+    {
+        return $this->withTrialPaymentMethodCollection(
+            SubscriptionTrialPaymentMethodCollection::fromBool($requiresPaymentMethodOnStart)
+        );
+    }
+
+    public function cardUpfront(): self
+    {
+        return $this->withTrialRequiresPaymentMethodOnStart(true);
+    }
+
+    public function noCardUpfront(): self
+    {
+        return $this->withTrialRequiresPaymentMethodOnStart(false);
+    }
+
+    public function withTrialMissingPaymentMethodBehavior(SubscriptionTrialMissingPaymentMethodBehavior $behavior): self
+    {
+        $this->trialPolicy = SubscriptionTrialPolicy::create(
+            paymentMethodCollection: $this->trialPolicy?->paymentMethodCollection(),
+            missingPaymentMethodBehavior: $behavior,
+        );
+
+        return $this;
+    }
+
+    public function pauseOnMissingPayment(): self
+    {
+        return $this->withTrialMissingPaymentMethodBehavior(SubscriptionTrialMissingPaymentMethodBehavior::Pause);
+    }
+
+    public function cancelOnMissingPayment(): self
+    {
+        return $this->withTrialMissingPaymentMethodBehavior(SubscriptionTrialMissingPaymentMethodBehavior::Cancel);
+    }
+
+    public function invoiceOnMissingPayment(): self
+    {
+        return $this->withTrialMissingPaymentMethodBehavior(SubscriptionTrialMissingPaymentMethodBehavior::CreateInvoice);
+    }
+
     /**
      * @throws DateMalformedStringException
      */
@@ -95,7 +157,8 @@ final class SubscriptionDraftBuilder
             intervalCount: $this->intervalCount,
             currency: $this->currency,
             trialEndsAt: $this->trialEndsAt,
-            addons: $this->addons
+            addons: $this->addons,
+            trialPolicy: $this->trialPolicy
         );
     }
 

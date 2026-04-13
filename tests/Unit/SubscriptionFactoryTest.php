@@ -12,6 +12,9 @@ use AlturaCode\Billing\Core\Products\ProductPriceId;
 use AlturaCode\Billing\Core\Products\ProductSlug;
 use AlturaCode\Billing\Core\SubscriptionDraft;
 use AlturaCode\Billing\Core\SubscriptionFactory;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionTrialMissingPaymentMethodBehavior;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionTrialPaymentMethodCollection;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionTrialPolicy;
 
 it('creates a subscription with addons and features', function () {
     $plan = Product::create(
@@ -45,6 +48,10 @@ it('creates a subscription with addons and features', function () {
         billableType: 'user',
         provider: 'stripe',
         priceId: $plan->prices()[0]->id()->value(),
+        trialPolicy: SubscriptionTrialPolicy::create(
+            SubscriptionTrialPaymentMethodCollection::Required,
+            SubscriptionTrialMissingPaymentMethodBehavior::Pause,
+        ),
         addons: [
             ['priceId' => $addon->prices()[0]->id()->value(), 'quantity' => 1]
         ],
@@ -52,7 +59,10 @@ it('creates a subscription with addons and features', function () {
 
     expect($subscription->name()->value())->toBe('default')
         ->and($subscription->billable()->id())->toBe('user_1')
-        ->and($subscription->billable()->type())->toBe('user');
+        ->and($subscription->billable()->type())->toBe('user')
+        ->and($subscription->trialPolicy())->toBeInstanceOf(SubscriptionTrialPolicy::class)
+        ->and($subscription->trialRequiresPaymentMethodOnStart())->toBeTrue()
+        ->and($subscription->trialMissingPaymentMethodBehavior())->toBe(SubscriptionTrialMissingPaymentMethodBehavior::Pause);
 });
 
 it('is able to resolve product price by product slug and price interval information', function () {

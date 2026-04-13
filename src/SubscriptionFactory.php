@@ -81,7 +81,8 @@ final class SubscriptionFactory
             name: SubscriptionName::fromString($draft->name),
             billable: BillableIdentity::fromString($draft->billableType, $draft->billableId),
             provider: SubscriptionProvider::fromString($draft->provider),
-            trialEndsAt: $draft->trialEndsAt
+            trialEndsAt: $draft->trialEndsAt,
+            trialPolicy: $draft->trialPolicy
         );
     }
 

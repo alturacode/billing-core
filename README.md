@@ -154,6 +154,9 @@ Located under `AlturaCode\Billing\Core\Subscriptions`:
 - `SubscriptionProvider` — which billing provider this subscription belongs to (for example, `stripe`)
 - `SubscriptionItem` — line items inside a subscription (base plan, add-ons) 
 - `SubscriptionItemEntitlement` - Entitlements granted by a subscription item
+- `SubscriptionTrialPolicy` — trial behavior metadata, including whether a payment method is required up front and what happens if no payment method exists at trial end
+- `SubscriptionTrialPaymentMethodCollection` — whether the trial requires a payment method before starting
+- `SubscriptionTrialMissingPaymentMethodBehavior` — what to do when a trial ends without a payment method
 - `SubscriptionRepository` — abstraction that you implement to persist subscriptions
 
 Subscriptions are **provider-agnostic**; provider-specific IDs and state are managed by provider implementations and stored alongside subscriptions using `AlturaCode\Billing\Core\Provider\ExternalIdMapper`.
@@ -339,6 +342,7 @@ $result = $manager->createSubscription(
         priceId: '01HZX3J8Y8B7MDQW9RGS0F7C39',  // the primary price ULID as a string
         quantity: 1,
         trialEndsAt: null,
+        trialPolicy: null,
         addons: [
             ['priceId'   => '01HZX3J8Y8B7MDQW9RGS0F7C41', 'quantity'  => 5],
         ]

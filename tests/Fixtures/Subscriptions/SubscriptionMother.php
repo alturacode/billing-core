@@ -11,6 +11,7 @@ use AlturaCode\Billing\Core\Subscriptions\SubscriptionItem;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionProvider;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionTrialPolicy;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionStatus;
 use DateTimeImmutable;
 use ReflectionClass;
@@ -32,6 +33,7 @@ final class SubscriptionMother
         ?DateTimeImmutable    $createdAt = null,
         bool                  $cancelAtPeriodEnd = false,
         ?DateTimeImmutable    $trialEndsAt = null,
+        ?SubscriptionTrialPolicy $trialPolicy = null,
         ?DateTimeImmutable    $canceledAt = null,
     ): Subscription {
         $reflection = new ReflectionClass(Subscription::class);
@@ -64,6 +66,7 @@ final class SubscriptionMother
             $createdAt,
             $cancelAtPeriodEnd,
             $trialEndsAt,
+            $trialPolicy,
             $canceledAt,
         );
 

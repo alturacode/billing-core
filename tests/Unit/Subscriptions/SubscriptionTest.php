@@ -14,18 +14,25 @@ use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionItemId;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionName;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionProvider;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionTrialMissingPaymentMethodBehavior;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionTrialPaymentMethodCollection;
+use AlturaCode\Billing\Core\Subscriptions\SubscriptionTrialPolicy;
 use AlturaCode\Billing\Core\Subscriptions\SubscriptionStatus;
 
 /**
  * Helpers
  */
-function makeSubscription(?DateTimeImmutable $trialEndsAt = null): Subscription {
+function makeSubscription(
+    ?DateTimeImmutable $trialEndsAt = null,
+    ?SubscriptionTrialPolicy $trialPolicy = null,
+): Subscription {
     return Subscription::create(
         id: SubscriptionId::generate(),
         name: SubscriptionName::fromString('main'),
         billable: BillableIdentity::fromString('user', 1),
         provider: SubscriptionProvider::fromString('stripe'),
         trialEndsAt: $trialEndsAt,
+        trialPolicy: $trialPolicy,
     );
 }
 
@@ -122,6 +129,7 @@ it('can be hydrated', function () {
         'created_at' => '2023-01-01 00:00:00',
         'cancel_at_period_end' => false,
         'trial_ends_at' => null,
+        'trial_policy' => null,
         'canceled_at' => null,
     ];
 
@@ -133,7 +141,49 @@ it('can be hydrated', function () {
         ->and($subscription->name()->value())->toBe('main')
         ->and($subscription->status())->toBe(SubscriptionStatus::Active)
         ->and($subscription->items())->toHaveCount(1)
-        ->and($subscription->primaryItem()->id()->value())->toBe((string) $itemId);
+        ->and($subscription->primaryItem()->id()->value())->toBe((string) $itemId)
+        ->and($subscription->trialPolicy())->toBeNull();
+});
+
+it('hydrates and exposes trial policy', function () {
+    $id = SubscriptionId::generate();
+    $itemId = SubscriptionItemId::generate();
+    $priceId = \AlturaCode\Billing\Core\Products\ProductPriceId::generate();
+
+    $data = [
+        'id' => (string) $id,
+        'billable' => ['type' => 'user', 'id' => 1],
+        'provider' => 'stripe',
+        'name' => 'main',
+        'status' => 'active',
+        'items' => [
+            [
+                'id' => (string) $itemId,
+                'price_id' => (string) $priceId,
+                'quantity' => 1,
+                'price' => ['amount' => 1000, 'currency' => 'usd'],
+                'interval' => ['type' => 'month', 'count' => 1],
+                'entitlements' => []
+            ]
+        ],
+        'primary_item_id' => (string) $itemId,
+        'created_at' => '2023-01-01 00:00:00',
+        'cancel_at_period_end' => false,
+        'trial_ends_at' => '2023-01-10 00:00:00',
+        'trial_policy' => [
+            'payment_method_collection' => SubscriptionTrialPaymentMethodCollection::Required->value,
+            'missing_payment_method_behavior' => SubscriptionTrialMissingPaymentMethodBehavior::Pause->value,
+        ],
+        'canceled_at' => null,
+    ];
+
+    $subscription = Subscription::hydrate($data);
+
+    expect($subscription->trialEndsAt())->toEqual(new DateTimeImmutable('2023-01-10 00:00:00'))
+        ->and($subscription->trialPolicy())->toBeInstanceOf(SubscriptionTrialPolicy::class)
+        ->and($subscription->trialPaymentMethodCollection())->toBe(SubscriptionTrialPaymentMethodCollection::Required)
+        ->and($subscription->trialRequiresPaymentMethodOnStart())->toBeTrue()
+        ->and($subscription->trialMissingPaymentMethodBehavior())->toBe(SubscriptionTrialMissingPaymentMethodBehavior::Pause);
 });
 
 it('throws when setting primary item to a non-existing item', function () {
@@ -284,6 +334,19 @@ it('determines trial status based on provided time', function () {
     expect($subscription->isInTrial(new DateTimeImmutable('2025-01-01 00:00:00')))->toBeTrue()
         ->and($subscription->isInTrial(new DateTimeImmutable('2025-01-10 00:00:00')))->toBeFalse()
         ->and($subscription->isInTrial(new DateTimeImmutable('2025-02-01 00:00:00')))->toBeFalse();
+});
+
+it('exposes trial policy helpers when constructed directly', function () {
+    $subscription = makeSubscription(
+        trialEndsAt: new DateTimeImmutable('2025-01-10 00:00:00'),
+        trialPolicy: SubscriptionTrialPolicy::create(
+            SubscriptionTrialPaymentMethodCollection::Optional,
+            SubscriptionTrialMissingPaymentMethodBehavior::CreateInvoice,
+        )
+    );
+
+    expect($subscription->trialRequiresPaymentMethodOnStart())->toBeFalse()
+        ->and($subscription->trialMissingPaymentMethodBehavior())->toBe(SubscriptionTrialMissingPaymentMethodBehavior::CreateInvoice);
 });
 
 it('does not allow mixed currencies across items', function () {

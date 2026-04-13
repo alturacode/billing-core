@@ -27,6 +27,7 @@ final readonly class Subscription
         private DateTimeImmutable    $createdAt,
         private bool                 $cancelAtPeriodEnd = false,
         private ?DateTimeImmutable   $trialEndsAt = null,
+        private ?SubscriptionTrialPolicy $trialPolicy = null,
         private ?DateTimeImmutable   $canceledAt = null,
     )
     {
@@ -50,6 +51,16 @@ final readonly class Subscription
             createdAt: DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $data['created_at']),
             cancelAtPeriodEnd: $data['cancel_at_period_end'],
             trialEndsAt: $data['trial_ends_at'] ? DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $data['trial_ends_at']) : null,
+            trialPolicy: array_key_exists('trial_policy', $data) && $data['trial_policy'] !== null
+                ? SubscriptionTrialPolicy::hydrate($data['trial_policy'])
+                : (
+                    array_key_exists('trial_payment_method_collection', $data) || array_key_exists('trial_missing_payment_method_behavior', $data)
+                        ? SubscriptionTrialPolicy::hydrate([
+                            'payment_method_collection' => $data['trial_payment_method_collection'] ?? null,
+                            'missing_payment_method_behavior' => $data['trial_missing_payment_method_behavior'] ?? null,
+                        ])
+                        : null
+                ),
             canceledAt: $data['canceled_at'] ? DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $data['canceled_at']) : null,
         );
     }
@@ -60,6 +71,7 @@ final readonly class Subscription
         BillableIdentity     $billable,
         SubscriptionProvider $provider,
         ?DateTimeImmutable   $trialEndsAt = null,
+        ?SubscriptionTrialPolicy $trialPolicy = null,
     ): Subscription
     {
         return new self(
@@ -71,7 +83,8 @@ final readonly class Subscription
             items: [],
             primaryItemId: null,
             createdAt: new DateTimeImmutable(),
-            trialEndsAt: $trialEndsAt
+            trialEndsAt: $trialEndsAt,
+            trialPolicy: $trialPolicy
         );
     }
 
@@ -119,6 +132,26 @@ final readonly class Subscription
     public function trialEndsAt(): ?DateTimeImmutable
     {
         return $this->trialEndsAt;
+    }
+
+    public function trialPolicy(): ?SubscriptionTrialPolicy
+    {
+        return $this->trialPolicy;
+    }
+
+    public function trialPaymentMethodCollection(): ?SubscriptionTrialPaymentMethodCollection
+    {
+        return $this->trialPolicy?->paymentMethodCollection();
+    }
+
+    public function trialRequiresPaymentMethodOnStart(): ?bool
+    {
+        return $this->trialPolicy?->requiresPaymentMethodOnStart();
+    }
+
+    public function trialMissingPaymentMethodBehavior(): ?SubscriptionTrialMissingPaymentMethodBehavior
+    {
+        return $this->trialPolicy?->missingPaymentMethodBehavior();
     }
 
     public function canceledAt(): ?DateTimeImmutable
@@ -392,6 +425,7 @@ final readonly class Subscription
         ?DateTimeImmutable    $createdAt = null,
         ?bool                 $cancelAtPeriodEnd = null,
         ?DateTimeImmutable    $trialEndsAt = null,
+        ?SubscriptionTrialPolicy $trialPolicy = null,
         ?DateTimeImmutable    $canceledAt = null,
     ): self
     {
@@ -406,6 +440,7 @@ final readonly class Subscription
             createdAt: $createdAt ?? $this->createdAt,
             cancelAtPeriodEnd: $cancelAtPeriodEnd !== null ? $cancelAtPeriodEnd : $this->cancelAtPeriodEnd,
             trialEndsAt: $trialEndsAt !== null ? $trialEndsAt : $this->trialEndsAt,
+            trialPolicy: $trialPolicy !== null ? $trialPolicy : $this->trialPolicy,
             canceledAt: $canceledAt !== null ? $canceledAt : $this->canceledAt,
         );
     }
