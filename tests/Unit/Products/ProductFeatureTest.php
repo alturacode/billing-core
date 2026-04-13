@@ -36,3 +36,13 @@ it('can be hydrated', function () {
         ->and($feature->description())->toBe('Feature Description')
         ->and($feature->sortOrder())->toBe(5);
 });
+
+it('can be customized with name, description and sort order', function () {
+    $feature = ProductFeature::create(FeatureKey::fromString('feature'), FeatureValue::flagOn());
+    $featureWithName = $feature->withName('Feature Name');
+    $featureWithDescription = $featureWithName->withDescription('Feature Description');
+    $featureWithSortOrder = $featureWithDescription->withSortOrder(10);
+    expect($featureWithSortOrder->name())->toBe('Feature Name')
+        ->and($featureWithSortOrder->description())->toBe('Feature Description')
+        ->and($featureWithSortOrder->sortOrder())->toBe(10);
+});

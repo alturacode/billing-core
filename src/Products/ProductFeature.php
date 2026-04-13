@@ -59,4 +59,19 @@ final readonly class ProductFeature
     {
         return $this->sortOrder;
     }
+
+    public function withName(string $name): self
+    {
+        return new self($this->key, $this->value, $name, $this->description, $this->sortOrder);
+    }
+
+    public function withDescription(string $description): self
+    {
+        return new self($this->key, $this->value, $this->name, $description, $this->sortOrder);
+    }
+
+    public function withSortOrder(int $sortOrder): self
+    {
+        return new self($this->key, $this->value, $this->name, $this->description, $sortOrder);
+    }
 }
