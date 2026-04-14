@@ -6,26 +6,30 @@ use AlturaCode\Billing\Core\Common\FeatureValue;
 use AlturaCode\Billing\Core\Common\UsagePolicy;
 use AlturaCode\Billing\Core\Common\UsageWindowCalculator;
 use AlturaCode\Billing\Core\EffectiveEntitlement;
-use AlturaCode\Billing\Core\Features\InMemoryUsageRepository;
+use AlturaCode\Billing\Core\Features\InMemoryUsageLedger;
+use AlturaCode\Billing\Core\Features\UsageEvent;
+use AlturaCode\Billing\Core\Features\UsageEventId;
 use AlturaCode\Billing\Core\UsageAwareEntitlementChecker;
+use AlturaCode\Billing\Core\UsageAwareEntitlementCheckerFactory;
+use Tests\Fixtures\Subscriptions\SubscriptionItemMother;
+use Tests\Fixtures\Subscriptions\SubscriptionMother;
 
 beforeEach(function () {
-    $this->repository = new InMemoryUsageRepository();
+    $this->ledger = new InMemoryUsageLedger();
     $this->calculator = new UsageWindowCalculator();
     $this->billable = BillableIdentity::fromString('user', 123);
 });
 
+function makeChecker(array $entitlements, InMemoryUsageLedger $ledger, UsageWindowCalculator $calculator, BillableIdentity $billable): UsageAwareEntitlementChecker
+{
+    return new UsageAwareEntitlementChecker($entitlements, $ledger, $calculator, $billable);
+}
+
 it('returns false for non-existent features', function () {
-    $entitlements = [];
-    $checker = new UsageAwareEntitlementChecker(
-        $entitlements,
-        $this->repository,
-        $this->calculator,
-        $this->billable
-    );
+    $checker = makeChecker([], $this->ledger, $this->calculator, $this->billable);
 
     expect($checker->canUse('non_existent'))->toBeFalse()
-        ->and($checker->tryConsume('non_existent'))->toBeFalse();
+        ->and($checker->getUsedAmount('non_existent'))->toBe(0);
 });
 
 it('returns flag state for flag features', function () {
@@ -40,15 +44,10 @@ it('returns flag state for flag features', function () {
         ),
     ];
 
-    $checker = new UsageAwareEntitlementChecker(
-        $entitlements,
-        $this->repository,
-        $this->calculator,
-        $this->billable
-    );
+    $checker = makeChecker($entitlements, $this->ledger, $this->calculator, $this->billable);
 
     expect($checker->canUse('dark_mode'))->toBeTrue()
-        ->and($checker->tryConsume('dark_mode'))->toBeTrue();
+        ->and($checker->getUsedAmount('dark_mode'))->toBe(0);
 });
 
 it('returns false for off flag features', function () {
@@ -63,18 +62,12 @@ it('returns false for off flag features', function () {
         ),
     ];
 
-    $checker = new UsageAwareEntitlementChecker(
-        $entitlements,
-        $this->repository,
-        $this->calculator,
-        $this->billable
-    );
+    $checker = makeChecker($entitlements, $this->ledger, $this->calculator, $this->billable);
 
-    expect($checker->canUse('dark_mode'))->toBeFalse()
-        ->and($checker->tryConsume('dark_mode'))->toBeFalse();
+    expect($checker->canUse('dark_mode'))->toBeFalse();
 });
 
-it('allows unlimited limit features without tracking', function () {
+it('allows unlimited limit features without blocking on usage', function () {
     $featureKey = FeatureKey::fromString('comments');
     $entitlements = [
         $featureKey->value() => EffectiveEntitlement::fromGrant(
@@ -86,24 +79,13 @@ it('allows unlimited limit features without tracking', function () {
         ),
     ];
 
-    $checker = new UsageAwareEntitlementChecker(
-        $entitlements,
-        $this->repository,
-        $this->calculator,
-        $this->billable
-    );
+    $checker = makeChecker($entitlements, $this->ledger, $this->calculator, $this->billable);
 
-    // Should always return true without tracking usage
     expect($checker->canUse('comments', 1000))->toBeTrue()
-        ->and($checker->tryConsume('comments', 1000))->toBeTrue()
-        ->and($this->repository->getUsedAmount(
-            $this->billable,
-            $featureKey,
-            $this->calculator->forPolicyAt(UsagePolicy::calendarMonth(), new DateTimeImmutable())
-        ))->toBe(0); // No usage tracked
+        ->and($checker->getUsedAmount('comments'))->toBe(0);
 });
 
-it('successfully consumes within limit', function () {
+it('reads limit usage from the ledger', function () {
     $featureKey = FeatureKey::fromString('comments');
     $policy = UsagePolicy::calendarMonth();
     $entitlements = [
@@ -116,20 +98,23 @@ it('successfully consumes within limit', function () {
         ),
     ];
 
-    $checker = new UsageAwareEntitlementChecker(
-        $entitlements,
-        $this->repository,
-        $this->calculator,
-        $this->billable
-    );
+    $checker = makeChecker($entitlements, $this->ledger, $this->calculator, $this->billable);
+    $ledgerWindowAt = new DateTimeImmutable('2026-02-15 12:00:00', new DateTimeZone('UTC'));
 
-    expect($checker->tryConsume('comments', 1))->toBeTrue()
-        ->and($checker->getUsedAmount('comments'))->toBe(1)
-        ->and($checker->tryConsume('comments', 10))->toBeTrue()
-        ->and($checker->getUsedAmount('comments'))->toBe(11);
+    $this->ledger->record(UsageEvent::create(
+        UsageEventId::generate(),
+        $this->billable,
+        $featureKey,
+        499,
+        new DateTimeImmutable('2026-02-10 12:00:00', new DateTimeZone('UTC')),
+    ));
+
+    expect($checker->getUsedAmount('comments', $ledgerWindowAt))->toBe(499)
+        ->and($checker->canUse('comments', 1, $ledgerWindowAt))->toBeTrue()
+        ->and($checker->canUse('comments', 2, $ledgerWindowAt))->toBeFalse();
 });
 
-it('prevents exceeding limit with tryConsume', function () {
+it('respects month rollover when checking usage', function () {
     $featureKey = FeatureKey::fromString('comments');
     $policy = UsagePolicy::calendarMonth();
     $entitlements = [
@@ -142,189 +127,85 @@ it('prevents exceeding limit with tryConsume', function () {
         ),
     ];
 
-    $checker = new UsageAwareEntitlementChecker(
-        $entitlements,
-        $this->repository,
-        $this->calculator,
-        $this->billable
-    );
+    $checker = makeChecker($entitlements, $this->ledger, $this->calculator, $this->billable);
 
-    // Consume up to near the limit
-    $checker->tryConsume('comments', 499);
-
-    // Try to exceed
-    expect($checker->tryConsume('comments', 2))->toBeFalse()
-        ->and($checker->getUsedAmount('comments'))->toBe(499); // Should not have incremented
-});
-
-it('allows consumption exactly at limit', function () {
-    $featureKey = FeatureKey::fromString('comments');
-    $policy = UsagePolicy::calendarMonth();
-    $entitlements = [
-        $featureKey->value() => EffectiveEntitlement::fromGrant(
-            \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement::create(
-                \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId::generate(),
-                $featureKey,
-                FeatureValue::limit(500, $policy),
-            )
-        ),
-    ];
-
-    $checker = new UsageAwareEntitlementChecker(
-        $entitlements,
-        $this->repository,
-        $this->calculator,
-        $this->billable
-    );
-
-    expect($checker->tryConsume('comments', 500))->toBeTrue()
-        ->and($checker->getUsedAmount('comments'))->toBe(500)
-        ->and($checker->tryConsume('comments', 1))->toBeFalse();
-});
-
-it('resets usage in new month window', function () {
-    $featureKey = FeatureKey::fromString('comments');
-    $policy = UsagePolicy::calendarMonth();
-    $entitlements = [
-        $featureKey->value() => EffectiveEntitlement::fromGrant(
-            \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement::create(
-                \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId::generate(),
-                $featureKey,
-                FeatureValue::limit(500, $policy),
-            )
-        ),
-    ];
-
-    $checker = new UsageAwareEntitlementChecker(
-        $entitlements,
-        $this->repository,
-        $this->calculator,
-        $this->billable
-    );
-
-    // Consume in February
     $february = new DateTimeImmutable('2026-02-15 12:00:00', new DateTimeZone('UTC'));
-    expect($checker->tryConsume('comments', 400, $february))->toBeTrue()
-        ->and($checker->getUsedAmount('comments', $february))->toBe(400);
-
-    // Check March - should be fresh window
     $march = new DateTimeImmutable('2026-03-15 12:00:00', new DateTimeZone('UTC'));
-    expect($checker->getUsedAmount('comments', $march))->toBe(0)
-        ->and($checker->tryConsume('comments', 500, $march))->toBeTrue()
-        ->and($checker->getUsedAmount('comments', $march))->toBe(500);
 
-    // February usage should remain unchanged
-    expect($checker->getUsedAmount('comments', $february))->toBe(400);
+    $this->ledger->record(UsageEvent::create(
+        UsageEventId::generate(),
+        $this->billable,
+        $featureKey,
+        400,
+        new DateTimeImmutable('2026-02-10 12:00:00', new DateTimeZone('UTC')),
+    ));
+    $this->ledger->record(UsageEvent::create(
+        UsageEventId::generate(),
+        $this->billable,
+        $featureKey,
+        500,
+        new DateTimeImmutable('2026-03-10 12:00:00', new DateTimeZone('UTC')),
+    ));
+
+    expect($checker->getUsedAmount('comments', $february))->toBe(400)
+        ->and($checker->canUse('comments', 100, $february))->toBeTrue()
+        ->and($checker->getUsedAmount('comments', $march))->toBe(500)
+        ->and($checker->canUse('comments', 1, $march))->toBeFalse();
 });
 
-it('canUse performs non-atomic check', function () {
-    $featureKey = FeatureKey::fromString('comments');
-    $policy = UsagePolicy::calendarMonth();
+it('supports perpetual windows', function () {
+    $featureKey = FeatureKey::fromString('websites');
+    $policy = UsagePolicy::perpetual();
     $entitlements = [
         $featureKey->value() => EffectiveEntitlement::fromGrant(
             \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement::create(
                 \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId::generate(),
                 $featureKey,
-                FeatureValue::limit(500, $policy),
+                FeatureValue::limit(3, $policy),
             )
         ),
     ];
 
-    $checker = new UsageAwareEntitlementChecker(
-        $entitlements,
-        $this->repository,
-        $this->calculator,
-        $this->billable
-    );
+    $checker = makeChecker($entitlements, $this->ledger, $this->calculator, $this->billable);
+    $january = new DateTimeImmutable('2026-01-15 12:00:00', new DateTimeZone('UTC'));
+    $april = new DateTimeImmutable('2026-04-15 12:00:00', new DateTimeZone('UTC'));
 
-    // Check without consuming
-    expect($checker->canUse('comments', 1))->toBeTrue()
-        ->and($checker->getUsedAmount('comments'))->toBe(0); // No usage tracked
+    $this->ledger->record(UsageEvent::create(
+        UsageEventId::generate(),
+        $this->billable,
+        $featureKey,
+        3,
+        $january,
+    ));
 
-    // Consume some
-    $checker->tryConsume('comments', 499);
-
-    // Check if we can use 1 more (should be true)
-    expect($checker->canUse('comments', 1))->toBeTrue()
-        ->and($checker->getUsedAmount('comments'))->toBe(499);
-
-    // Check if we can use 2 more (should be false)
-    expect($checker->canUse('comments', 2))->toBeFalse();
+    expect($checker->getUsedAmount('websites', $april))->toBe(3)
+        ->and($checker->canUse('websites', 1, $april))->toBeFalse();
 });
 
-it('isolates usage by billable identity', function () {
+it('can be created through the factory', function () {
     $featureKey = FeatureKey::fromString('comments');
     $policy = UsagePolicy::calendarMonth();
 
-    $billable1 = BillableIdentity::fromString('user', 101);
-    $billable2 = BillableIdentity::fromString('user', 202);
-
-    $entitlements = [
-        $featureKey->value() => EffectiveEntitlement::fromGrant(
-            \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement::create(
-                \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId::generate(),
-                $featureKey,
-                FeatureValue::limit(500, $policy),
-            )
-        ),
-    ];
-
-    $checker1 = new UsageAwareEntitlementChecker(
-        $entitlements,
-        $this->repository,
-        $this->calculator,
-        $billable1
+    $subscription = SubscriptionMother::create(
+        billable: $this->billable,
+        items: [
+            SubscriptionItemMother::create(entitlements: [
+                \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement::create(
+                    \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId::generate(),
+                    $featureKey,
+                    FeatureValue::limit(500, $policy),
+                ),
+            ]),
+        ],
     );
 
-    $checker2 = new UsageAwareEntitlementChecker(
-        $entitlements,
-        $this->repository,
-        $this->calculator,
-        $billable2
+    $factory = new UsageAwareEntitlementCheckerFactory(
+        new \AlturaCode\Billing\Core\EntitlementResolver(),
+        $this->ledger,
+        $this->calculator
     );
 
-    // Consume for subscription 1
-    $checker1->tryConsume('comments', 300);
+    $checker = $factory->create($subscription, new DateTimeImmutable('2026-02-15 12:00:00', new DateTimeZone('UTC')));
 
-    // Consume for subscription 2
-    $checker2->tryConsume('comments', 400);
-
-    // Each should have its own usage
-    expect($checker1->getUsedAmount('comments'))->toBe(300)
-        ->and($checker2->getUsedAmount('comments'))->toBe(400);
-});
-
-it('shares usage across checkers with the same billable identity', function () {
-    $featureKey = FeatureKey::fromString('comments');
-    $policy = UsagePolicy::calendarMonth();
-
-    $billable = BillableIdentity::fromString('user', 303);
-
-    $entitlements = [
-        $featureKey->value() => EffectiveEntitlement::fromGrant(
-            \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement::create(
-                \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId::generate(),
-                $featureKey,
-                FeatureValue::limit(500, $policy),
-            )
-        ),
-    ];
-
-    $checker1 = new UsageAwareEntitlementChecker(
-        $entitlements,
-        $this->repository,
-        $this->calculator,
-        $billable
-    );
-
-    $checker2 = new UsageAwareEntitlementChecker(
-        $entitlements,
-        $this->repository,
-        $this->calculator,
-        $billable
-    );
-
-    $checker1->tryConsume('comments', 120);
-
-    expect($checker2->getUsedAmount('comments'))->toBe(120);
+    expect($checker)->toBeInstanceOf(UsageAwareEntitlementChecker::class);
 });

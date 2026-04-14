@@ -140,7 +140,7 @@ Located under `AlturaCode\Billing\Core\Features`:
 
 - `Feature` — a capability your subscription unlocks (for example, `projects`, `seats`, `storage_gb`)
 - `UsagePolicy` — defines how usage is tracked and reset for limit-based features. By default, limits use a `calendarMonth` policy.
-- `UsageRepository` — abstraction that you implement to track and persist feature usage
+- `UsageLedger` — canonical usage event store and windowed usage query surface
 
 Features are associated with products via `ProductFeature`.
 
@@ -193,7 +193,7 @@ This is the main entry point most applications and framework adapters use.
 
 ### Entitlement Checking
 
-The package provides a `UsageAwareEntitlementChecker` (created via `UsageAwareEntitlementCheckerFactory`) to check and consume feature usage.
+The package provides a `UsageAwareEntitlementChecker` (created via `UsageAwareEntitlementCheckerFactory`) to check entitlements and inspect usage totals through the canonical ledger.
 
 ```php
 use AlturaCode\Billing\Core\UsageAwareEntitlementCheckerFactory;
@@ -202,25 +202,27 @@ use AlturaCode\Billing\Core\Common\UsageWindowCalculator;
 
 $factory = new UsageAwareEntitlementCheckerFactory(
     new EntitlementResolver(),
-    new DatabaseUsageRepository(), // Your implementation
+    new DatabaseUsageLedger(), // Your implementation
     new UsageWindowCalculator()
 );
 
 $now = new \DateTimeImmutable();
 $checker = $factory->create($subscription, $now);
 
-// Check if a feature can be used (non-atomic, for UI/display)
+// Check if a feature can be used
 if ($checker->canUse('projects', 1)) {
     // ...
 }
 
-// Atomically consume a feature (for authoritative enforcement)
-if ($checker->tryConsume('projects', 1)) {
-    // Action allowed and usage recorded
+// Inspect usage totals for the current entitlement window
+if ($checker->getUsedAmount('projects') > 0) {
+    // ...
 }
 ```
 
 For simple checks without usage tracking, you can use the basic `EntitlementCheckerFactory`.
+
+To record usage, append `UsageEvent` instances through a `UsageLedger`.
 
 ---
 
@@ -230,7 +232,7 @@ Below is a minimal pure-PHP setup. In a real app, you would wire this via a cont
 
 ### 1. Implement the Repositories
 
-You must implement `ProductRepository`, `SubscriptionRepository`, and `UsageRepository`. A basic example might look like:
+You must implement `ProductRepository`, `SubscriptionRepository`, and `UsageLedger`. A basic example might look like:
 
 ```php
 use AlturaCode\Billing\Core\Products\ProductRepository;
@@ -278,26 +280,26 @@ final class DatabaseSubscriptionRepository implements SubscriptionRepository
 }
 ```
 
-`UsageRepository` tracks feature usage for a given window (for example, a calendar month).
+`UsageLedger` stores raw usage events independently of subscriptions and entitlements, and can answer windowed usage queries.
 
 ```php
-use AlturaCode\Billing\Core\Features\UsageRepository;
 use AlturaCode\Billing\Core\Common\BillableIdentity;
 use AlturaCode\Billing\Core\Common\FeatureKey;
 use AlturaCode\Billing\Core\Common\UsageWindow;
+use AlturaCode\Billing\Core\Features\UsageEvent;
+use AlturaCode\Billing\Core\Features\UsageLedger;
 
-final class DatabaseUsageRepository implements UsageRepository
+final class DatabaseUsageLedger implements UsageLedger
 {
-    public function getUsedAmount(BillableIdentity $billable, FeatureKey $featureKey, UsageWindow $window): int
+    public function record(UsageEvent $event): bool
     {
-        // Return used amount from your DB for the given window
+        // Insert the raw event using $event->id()->value() as an idempotency key.
+        // Return true if inserted, false if it already existed.
     }
 
-    public function tryConsume(BillableIdentity $billable, FeatureKey $featureKey, UsageWindow $window, int $amount, int $limit): bool
+    public function getUsedAmount(BillableIdentity $billable, FeatureKey $featureKey, UsageWindow $window): int
     {
-        // Atomically attempt to consume $amount.
-        // Ensure that (current usage + $amount) <= $limit.
-        // Return true on success, false otherwise.
+        // Return the total recorded amount for the billable and feature within the window.
     }
 }
 ```
