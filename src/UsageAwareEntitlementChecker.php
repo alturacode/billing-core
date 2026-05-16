@@ -8,7 +8,7 @@ use AlturaCode\Billing\Core\Common\BillableIdentity;
 use AlturaCode\Billing\Core\Common\FeatureKey;
 use AlturaCode\Billing\Core\Common\FeatureKind;
 use AlturaCode\Billing\Core\Common\UsageWindowCalculator;
-use AlturaCode\Billing\Core\Features\UsageLedger;
+use AlturaCode\Billing\Core\Features\UsageMeter;
 use DateTimeImmutable;
 
 /**
@@ -21,7 +21,7 @@ final readonly class UsageAwareEntitlementChecker
      */
     public function __construct(
         private array $effectiveEntitlements,
-        private UsageLedger $usageLedger,
+        private UsageMeter $usageMeter,
         private UsageWindowCalculator $windowCalculator,
         private BillableIdentity $billable,
     ) {
@@ -68,7 +68,7 @@ final readonly class UsageAwareEntitlementChecker
 
         $window = $this->windowCalculator->forPolicyAt($usagePolicy, $at);
 
-        return $this->usageLedger->getUsedAmount(
+        return $this->usageMeter->getUsedAmount(
             $this->billable,
             $key,
             $window
@@ -91,7 +91,7 @@ final readonly class UsageAwareEntitlementChecker
         }
 
         $window = $this->windowCalculator->forPolicyAt($usagePolicy, $at);
-        $currentUsage = $this->usageLedger->getUsedAmount(
+        $currentUsage = $this->usageMeter->getUsedAmount(
             $this->billable,
             $key,
             $window

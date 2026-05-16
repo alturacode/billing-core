@@ -1,3 +1,89 @@
+# Upgrade Guide: v0.24.* to v0.25.*
+
+This release splits usage recording from usage reading. The usage ledger remains the write path for append-only usage events, while `UsageMeter` is now the read-side abstraction used by entitlement checks.
+
+## What Changed
+
+- `UsageMeter` was added for windowed usage totals.
+- `UsageLedger` now extends `UsageMeter`, so existing ledgers still satisfy the read-side contract.
+- `UsageAwareEntitlementChecker` now accepts a `UsageMeter` instead of a `UsageLedger`.
+- `UsageAwareEntitlementCheckerFactory` now accepts a `UsageMeter` instead of a `UsageLedger`.
+- `UsageEvent` amounts remain positive-only.
+
+## Migration Steps
+
+### 1. Keep existing ledgers working
+
+If you already pass a `UsageLedger` to `UsageAwareEntitlementChecker` or `UsageAwareEntitlementCheckerFactory`, no implementation change is required because `UsageLedger` extends `UsageMeter`.
+
+```php
+$factory = new UsageAwareEntitlementCheckerFactory(
+    new EntitlementResolver(),
+    $ledger,
+    new UsageWindowCalculator()
+);
+```
+
+### 2. Use custom meters for resource quotas
+
+For limits that represent current application state, such as active sites, seats, or projects, implement `UsageMeter` directly instead of recording negative events when resources are deleted.
+
+```php
+use AlturaCode\Billing\Core\Common\BillableIdentity;
+use AlturaCode\Billing\Core\Common\FeatureKey;
+use AlturaCode\Billing\Core\Common\UsageWindow;
+use AlturaCode\Billing\Core\Features\UsageMeter;
+
+final class ActiveSiteUsageMeter implements UsageMeter
+{
+    public function getUsedAmount(
+        BillableIdentity $billable,
+        FeatureKey $featureKey,
+        UsageWindow $window
+    ): int {
+        // Return count of active sites for $billable from your application database.
+    }
+}
+```
+
+Then pass that meter to the checker factory:
+
+```php
+$factory = new UsageAwareEntitlementCheckerFactory(
+    new EntitlementResolver(),
+    new ActiveSiteUsageMeter(),
+    new UsageWindowCalculator()
+);
+```
+
+### 3. Keep usage events positive
+
+Do not use negative `UsageEvent` amounts for corrections or deletions. `UsageEvent` represents consumed usage, and the constructor still rejects zero and negative amounts.
+
+Use:
+
+- `UsageLedger` for event-summed consumption, such as API calls or monthly exports.
+- `UsageMeter` for current-state quotas, such as active sites or seats.
+
+## Notes on Behavior
+
+- `UsageLedger::record()` behavior is unchanged.
+- `UsageLedger::getUsedAmount()` remains available through `UsageMeter`.
+- Existing code typed against `UsageLedger` continues to work.
+- Code that only needs to read usage can now depend on `UsageMeter`.
+
+## Suggested Code Search
+
+If you are migrating a codebase, search for these symbols:
+
+- `UsageAwareEntitlementCheckerFactory(`
+- `new UsageAwareEntitlementChecker(`
+- `UsageLedger`
+
+Keep `UsageLedger` where you need recording. Use `UsageMeter` where you only need usage totals.
+
+---
+
 # Upgrade Guide: v0.23.* to v0.24.*
 
 This release is a breaking change. The usage API has been simplified so the usage ledger is now the canonical place to record and query usage.

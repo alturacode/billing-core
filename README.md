@@ -140,7 +140,8 @@ Located under `AlturaCode\Billing\Core\Features`:
 
 - `Feature` — a capability your subscription unlocks (for example, `projects`, `seats`, `storage_gb`)
 - `UsagePolicy` — defines how usage is tracked and reset for limit-based features. By default, limits use a `calendarMonth` policy.
-- `UsageLedger` — canonical usage event store and windowed usage query surface
+- `UsageMeter` — read-side abstraction for windowed usage totals
+- `UsageLedger` — append-only usage event store; also a `UsageMeter` for event-summed usage
 
 Features are associated with products via `ProductFeature`.
 
@@ -193,7 +194,7 @@ This is the main entry point most applications and framework adapters use.
 
 ### Entitlement Checking
 
-The package provides a `UsageAwareEntitlementChecker` (created via `UsageAwareEntitlementCheckerFactory`) to check entitlements and inspect usage totals through the canonical ledger.
+The package provides a `UsageAwareEntitlementChecker` (created via `UsageAwareEntitlementCheckerFactory`) to check entitlements and inspect usage totals through a `UsageMeter`.
 
 ```php
 use AlturaCode\Billing\Core\UsageAwareEntitlementCheckerFactory;
@@ -202,7 +203,7 @@ use AlturaCode\Billing\Core\Common\UsageWindowCalculator;
 
 $factory = new UsageAwareEntitlementCheckerFactory(
     new EntitlementResolver(),
-    new DatabaseUsageLedger(), // Your implementation
+    new DatabaseUsageMeter(), // Your implementation
     new UsageWindowCalculator()
 );
 
@@ -222,7 +223,7 @@ if ($checker->getUsedAmount('projects') > 0) {
 
 For simple checks without usage tracking, you can use the basic `EntitlementCheckerFactory`.
 
-To record usage, append `UsageEvent` instances through a `UsageLedger`.
+To record metered consumption, append positive `UsageEvent` instances through a `UsageLedger`. For resource quotas such as "active sites", implement a `UsageMeter` that derives current usage from your application state.
 
 ---
 
@@ -232,7 +233,7 @@ Below is a minimal pure-PHP setup. In a real app, you would wire this via a cont
 
 ### 1. Implement the Repositories
 
-You must implement `ProductRepository`, `SubscriptionRepository`, and `UsageLedger`. A basic example might look like:
+You must implement `ProductRepository`, `SubscriptionRepository`, and a `UsageMeter` or `UsageLedger`. A basic example might look like:
 
 ```php
 use AlturaCode\Billing\Core\Products\ProductRepository;
@@ -280,7 +281,7 @@ final class DatabaseSubscriptionRepository implements SubscriptionRepository
 }
 ```
 
-`UsageLedger` stores raw usage events independently of subscriptions and entitlements, and can answer windowed usage queries.
+`UsageLedger` stores raw positive usage events independently of subscriptions and entitlements. Because it extends `UsageMeter`, it can also answer windowed usage queries by summing those events.
 
 ```php
 use AlturaCode\Billing\Core\Common\BillableIdentity;
@@ -300,6 +301,23 @@ final class DatabaseUsageLedger implements UsageLedger
     public function getUsedAmount(BillableIdentity $billable, FeatureKey $featureKey, UsageWindow $window): int
     {
         // Return the total recorded amount for the billable and feature within the window.
+    }
+}
+```
+
+For resource quotas backed by application state, implement `UsageMeter` directly:
+
+```php
+use AlturaCode\Billing\Core\Common\BillableIdentity;
+use AlturaCode\Billing\Core\Common\FeatureKey;
+use AlturaCode\Billing\Core\Common\UsageWindow;
+use AlturaCode\Billing\Core\Features\UsageMeter;
+
+final class ActiveSiteUsageMeter implements UsageMeter
+{
+    public function getUsedAmount(BillableIdentity $billable, FeatureKey $featureKey, UsageWindow $window): int
+    {
+        // Return count of active sites for $billable from your application database.
     }
 }
 ```

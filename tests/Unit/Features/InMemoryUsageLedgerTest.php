@@ -7,6 +7,7 @@ use AlturaCode\Billing\Core\Common\UsageWindowCalculator;
 use AlturaCode\Billing\Core\Features\InMemoryUsageLedger;
 use AlturaCode\Billing\Core\Features\UsageEvent;
 use AlturaCode\Billing\Core\Features\UsageEventId;
+use AlturaCode\Billing\Core\Features\UsageMeter;
 
 beforeEach(function () {
     $this->ledger = new InMemoryUsageLedger();
@@ -70,6 +71,15 @@ it('records usage without requiring an entitlement or policy', function () {
     expect($this->ledger->record($event))->toBeTrue();
 });
 
+it('rejects zero and negative usage event amounts', function (int $amount) {
+    UsageEvent::create(
+        UsageEventId::generate(),
+        BillableIdentity::fromString('team', 7),
+        FeatureKey::fromString('imports'),
+        $amount,
+    );
+})->with([0, -1])->throws(InvalidArgumentException::class, 'Usage event amount must be positive.');
+
 it('deduplicates usage events by event id', function () {
     $eventId = UsageEventId::generate();
 
@@ -102,6 +112,10 @@ it('returns zero for new usage', function () {
         FeatureKey::fromString('imports'),
         $window
     ))->toBe(0);
+});
+
+it('can be used as a usage meter', function () {
+    expect($this->ledger)->toBeInstanceOf(UsageMeter::class);
 });
 
 it('sums usage within a window', function () {

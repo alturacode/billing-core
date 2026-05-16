@@ -4,11 +4,13 @@ use AlturaCode\Billing\Core\Common\BillableIdentity;
 use AlturaCode\Billing\Core\Common\FeatureKey;
 use AlturaCode\Billing\Core\Common\FeatureValue;
 use AlturaCode\Billing\Core\Common\UsagePolicy;
+use AlturaCode\Billing\Core\Common\UsageWindow;
 use AlturaCode\Billing\Core\Common\UsageWindowCalculator;
 use AlturaCode\Billing\Core\EffectiveEntitlement;
 use AlturaCode\Billing\Core\Features\InMemoryUsageLedger;
 use AlturaCode\Billing\Core\Features\UsageEvent;
 use AlturaCode\Billing\Core\Features\UsageEventId;
+use AlturaCode\Billing\Core\Features\UsageMeter;
 use AlturaCode\Billing\Core\UsageAwareEntitlementChecker;
 use AlturaCode\Billing\Core\UsageAwareEntitlementCheckerFactory;
 use Tests\Fixtures\Subscriptions\SubscriptionItemMother;
@@ -20,9 +22,9 @@ beforeEach(function () {
     $this->billable = BillableIdentity::fromString('user', 123);
 });
 
-function makeChecker(array $entitlements, InMemoryUsageLedger $ledger, UsageWindowCalculator $calculator, BillableIdentity $billable): UsageAwareEntitlementChecker
+function makeChecker(array $entitlements, UsageMeter $meter, UsageWindowCalculator $calculator, BillableIdentity $billable): UsageAwareEntitlementChecker
 {
-    return new UsageAwareEntitlementChecker($entitlements, $ledger, $calculator, $billable);
+    return new UsageAwareEntitlementChecker($entitlements, $meter, $calculator, $billable);
 }
 
 it('returns false for non-existent features', function () {
@@ -112,6 +114,41 @@ it('reads limit usage from the ledger', function () {
     expect($checker->getUsedAmount('comments', $ledgerWindowAt))->toBe(499)
         ->and($checker->canUse('comments', 1, $ledgerWindowAt))->toBeTrue()
         ->and($checker->canUse('comments', 2, $ledgerWindowAt))->toBeFalse();
+});
+
+it('reads limit usage from a custom usage meter', function () {
+    $featureKey = FeatureKey::fromString('websites');
+    $policy = UsagePolicy::perpetual();
+    $entitlements = [
+        $featureKey->value() => EffectiveEntitlement::fromGrant(
+            \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement::create(
+                \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId::generate(),
+                $featureKey,
+                FeatureValue::limit(3, $policy),
+            )
+        ),
+    ];
+    $usageMeter = new class implements UsageMeter {
+        public function getUsedAmount(
+            BillableIdentity $billable,
+            FeatureKey $featureKey,
+            UsageWindow $window
+        ): int {
+            return 2;
+        }
+    };
+
+    $checker = new UsageAwareEntitlementChecker(
+        $entitlements,
+        $usageMeter,
+        $this->calculator,
+        $this->billable
+    );
+    $at = new DateTimeImmutable('2026-02-15 12:00:00', new DateTimeZone('UTC'));
+
+    expect($checker->getUsedAmount('websites', $at))->toBe(2)
+        ->and($checker->canUse('websites', 1, $at))->toBeTrue()
+        ->and($checker->canUse('websites', 2, $at))->toBeFalse();
 });
 
 it('respects month rollover when checking usage', function () {
@@ -208,4 +245,40 @@ it('can be created through the factory', function () {
     $checker = $factory->create($subscription, new DateTimeImmutable('2026-02-15 12:00:00', new DateTimeZone('UTC')));
 
     expect($checker)->toBeInstanceOf(UsageAwareEntitlementChecker::class);
+});
+
+it('can be created through the factory with a custom usage meter', function () {
+    $featureKey = FeatureKey::fromString('websites');
+    $policy = UsagePolicy::perpetual();
+    $subscription = SubscriptionMother::create(
+        billable: $this->billable,
+        items: [
+            SubscriptionItemMother::create(entitlements: [
+                \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlement::create(
+                    \AlturaCode\Billing\Core\Subscriptions\SubscriptionItemEntitlementId::generate(),
+                    $featureKey,
+                    FeatureValue::limit(3, $policy),
+                ),
+            ]),
+        ],
+    );
+    $usageMeter = new class implements UsageMeter {
+        public function getUsedAmount(
+            BillableIdentity $billable,
+            FeatureKey $featureKey,
+            UsageWindow $window
+        ): int {
+            return 3;
+        }
+    };
+    $factory = new UsageAwareEntitlementCheckerFactory(
+        new \AlturaCode\Billing\Core\EntitlementResolver(),
+        $usageMeter,
+        $this->calculator
+    );
+
+    $checker = $factory->create($subscription, new DateTimeImmutable('2026-02-15 12:00:00', new DateTimeZone('UTC')));
+
+    expect($checker)->toBeInstanceOf(UsageAwareEntitlementChecker::class)
+        ->and($checker->getUsedAmount('websites'))->toBe(3);
 });

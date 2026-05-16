@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.25.0
+
+### Added
+- `UsageMeter` read interface for windowed usage totals.
+
+### Changed
+- `UsageLedger` now extends `UsageMeter`.
+- `UsageAwareEntitlementChecker` no longer reads usage totals directly from a ledger; it reads from a meter.
+- The usage-aware factory now accepts a `UsageMeter`.
+- Documentation and examples updated to reflect the split between usage recording and usage reading.
+
+### Notes
+- `UsageEvent` amounts remain positive; consumers should use custom `UsageMeter` implementations for resource quotas that can decrease when resources are deleted.
+
 ## v0.24.0
 
 ### Added
