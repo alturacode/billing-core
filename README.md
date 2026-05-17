@@ -445,6 +445,8 @@ The exact semantics depend on the provider package, but `BillingProviderResult` 
 
 You should create an implementation of `ExternalIdMapper` which handles the saving and retrieval of external IDs.
 
+`store()` and `storeMultiple()` are upserts: they create a mapping when none exists, or replace the external ID for the same internal ID. Mappings are one-to-one per type and provider, so implementations should throw `ExternalIdMappingConflictException` if the external ID already belongs to a different internal ID. Use `forget()` or `forgetMultiple()` to remove local mappings without deleting any upstream provider resource.
+
 ---
 
 ## Integrating with Frameworks
